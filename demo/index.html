@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en" data-accent="ice">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Career Arsenal · Mission Control (demo)</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="demo.css">
+<script src="demo.js?v=interactive-1"></script>
+<link rel="stylesheet" href="mission.css?v=sample-3">
+<link rel="stylesheet" href="warroom.css">
+<script src="theme.js?v=sample-2"></script>
+</head>
+<body>
+<div class="demo-bar" id="demoBar"><a href="../" style="color:inherit;font-weight:600;white-space:nowrap">Back to tour</a><b>Demo</b><span id="demoMsg">Sample data · profile edits stay in this tab · fixed scores · no live scans or sends.</span></div>
+<header class="top">
+  <a class="brand" href="#overview"><b class="t-g">Career Arsenal</b> <span class="t-g">Mission control</span><svg class="brand-mark t-w" viewBox="0 0 48 48" aria-hidden="true"><path class="ring" d="M37 13.1A17 17 0 1 0 37 34.9"/><path class="delta" d="M24 11l8.5 21.5L24 26.5l-8.5 6z"/></svg><b class="t-w">Career Arsenal</b></a>
+  <span class="wr-pill t-w" id="wrDate"></span>
+  <span class="tag" id="dataTag"><i class="live-dot" aria-hidden="true"></i><span id="dataTagText">Live data</span></span>
+  <a class="wr-pill ghost t-w" id="wrScan" href="#scans" hidden></a>
+  <div class="top-right">
+    <a class="wr-pill t-w" id="wrIv" href="#interviews" hidden></a>
+    <div class="seg-toggle prof-sw" id="profSw" role="group" aria-label="Search profile" title="Fictional scenario: Career = longer-term opportunities. Flexible work = compatible schedule. Gigs = short projects.">
+      <button type="button" data-profile="all" aria-pressed="true">All<span></span></button>
+      <button type="button" data-profile="career" aria-pressed="false">Career<span></span></button>
+      <button type="button" data-profile="stack" aria-pressed="false">Flexible<span></span></button>
+      <button type="button" data-profile="gigs" aria-pressed="false">Gigs<span></span></button>
+    </div>
+    <div class="accent" role="group" aria-label="Accent color">
+      <button type="button" data-accent="ice" aria-pressed="true" title="Ice"><i></i><span class="sr">Ice</span></button>
+      <button type="button" data-accent="amber" aria-pressed="false" title="Amber"><i></i><span class="sr">Amber</span></button>
+      <button type="button" data-accent="silver" aria-pressed="false" title="Silver"><i></i><span class="sr">Silver</span></button>
+      <button type="button" data-accent="mint" aria-pressed="false" title="Mint"><i></i><span class="sr">Mint</span></button>
+    </div>
+    <label class="search"><span class="sr">Search roles, companies, or notes</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input id="q" type="search" placeholder="Search roles, companies, or notes" autocomplete="off">
+    </label>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="side" aria-label="Sections">
+    <a href="#overview" data-nav="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5 8 6.5v8.5H4z"/><path d="M10 19.5v-5h4v5"/></svg><span class="t-g">Overview</span><span class="t-w">War Room</span></a>
+    <a href="#applications" data-nav="applications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z"/><path d="M9 11h6M9 14.5h6M9 18h3.5"/></svg>Applications</a>
+    <a href="#interviews" data-nav="interviews"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Interviews<em class="nb" id="nbInterviews"></em></a>
+    <a href="#mail" data-nav="mail"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7.5l8 6 8-6"/></svg>Mail<em class="nb" id="nbMail"></em></a>
+    <a href="#inbox" data-nav="inbox"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13.5l2.5-8h11l2.5 8v6H4z"/><path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20"/></svg>Inbox<em class="nb" id="nbInbox"></em></a>
+    <a href="#stacking" data-nav="stacking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 4.5-8 4.5-8-4.5z"/><path d="M4 12.5l8 4.5 8-4.5"/><path d="M4 16.5l8 4.5 8-4.5"/></svg>Work fit</a>
+    <a href="#documents" data-nav="documents"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5V18a1.5 1.5 0 001.5 1.5h14a1.5 1.5 0 001.5-1.5V9A1.5 1.5 0 0019 7.5h-7l-2-2.5H5A1.5 1.5 0 003.5 6.5z"/></svg>Documents</a>
+    <a href="#answers" data-nav="answers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-4 3.5v-3.5H5z"/><path d="M9 10.5l2 2 4-4"/></svg>Answers<em class="nb" id="nbAnswers"></em></a>
+    <a href="#learn" data-nav="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.4 1.3 3 2 5 2s3.6-.7 5-2V11"/><path d="M21 9v5"/></svg>Learn</a>
+    <a href="#platforms" data-nav="platforms"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="7" height="7" rx="1.5"/><rect x="13.5" y="4" width="7" height="7" rx="1.5"/><rect x="3.5" y="14" width="7" height="6.5" rx="1.5"/><rect x="13.5" y="14" width="7" height="6.5" rx="1.5"/></svg>Platforms</a>
+    <a href="#websites" data-nav="websites"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5s1.2-6.1 3.5-8.5z"/></svg>Websites</a>
+    <a href="#targeting" data-nav="targeting"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>Targeting</a>
+    <a href="#scans" data-nav="scans"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>Scans</a>
+    <a href="#settings" data-nav="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Settings</a>
+    <section class="sys" aria-labelledby="sysTitle">
+      <h2 id="sysTitle">System status</h2>
+      <ul id="sysRows"></ul>
+    </section>
+  </nav>
+
+  <main class="main" id="main" data-view="overview">
+    <!-- War Room (Career Arsenal look): shown only when <html data-theme="warroom">. Drawn by warroom.js. -->
+    <section class="wr-hero t-w" id="wrHero" data-views="overview" aria-labelledby="wrTitle">
+      <h1 id="wrTitle"><span>Welcome back to the</span> War Room</h1>
+      <p id="wrLine"></p>
+      <div class="wr-actions">
+        <a class="wr-btn primary" href="#inbox"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13.5l2.5-8h11l2.5 8v6H4z"/><path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20"/></svg></i>Open Inbox</a>
+        <button type="button" class="wr-btn" data-iv-add><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M12 10v6M9 13h6"/></svg></i>Add Interview</button>
+        <a class="wr-btn" href="#mail"><i><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7.5l8 6 8-6"/></svg></i>Check Mail</a>
+        <a class="wr-btn" href="#scans"><i><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="2.5"/><path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg></i>Scan Status</a>
+      </div>
+    </section>
+    <section class="panel alerts" id="alerts" aria-labelledby="alTitle" hidden>
+      <div class="panel-h"><div class="al-head"><h2 id="alTitle">Needs you now <span class="count" id="alCount"></span></h2><p id="alDesc">Interviews today or tomorrow, unread LinkedIn messages, and deadlines in the next 3 days.</p><p class="al-peek" id="alPeek" hidden></p></div>
+        <button type="button" class="btn sm" id="alToggle" aria-controls="alRows" aria-expanded="true">Hide</button></div>
+      <ul class="next" id="alRows"></ul>
+    </section>
+    <!-- Standing reminders (Austin, 2026-11-07), on every page. -->
+    <aside class="remind" aria-label="Reminders">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></svg>
+      <ul>
+        <li><b>Answer unknown numbers.</b> Recruiters call from random and out-of-state numbers. Pick up, or call back the same day.</li>
+        <li><b>Check your email through the day.</b> Interview invites and replies go cold fast. <a href="https://mail.google.com/" target="_blank" rel="noopener noreferrer">Open Gmail</a></li>
+      </ul>
+    </aside>
+    <section class="kpis" id="kpis" aria-label="Key numbers" data-views="overview"></section>
+
+    <section class="wr-grid t-w" id="wrGrid" data-views="overview" aria-label="War Room panels">
+      <section class="panel wr-flow" aria-labelledby="wrFlowT">
+        <div class="panel-h"><div><h2 id="wrFlowT">Pipeline flow</h2><p>Every application you sent, by lane, and where it stands today.</p></div></div>
+        <div class="wr-flow-body" id="wrFlow"></div>
+      </section>
+      <section class="panel wr-bars" aria-labelledby="wrBarsT">
+        <div class="panel-h"><div><h2 id="wrBarsT">Applications per week</h2><div class="wr-legend"><span><i style="background:var(--mint)"></i>Sent</span><span><i class="v" style="background:var(--violet)"></i>First replies</span></div></div></div>
+        <div id="wrBars"></div>
+      </section>
+    </section>
+    <div class="wr-col t-w" id="wrCol" data-views="overview">
+      <section class="panel wr-cap" aria-labelledby="wrCapT">
+        <div class="panel-h"><div><h2 id="wrCapT">Capacity</h2><p id="wrCapP"></p></div></div>
+        <div id="wrCap"></div>
+      </section>
+      <section class="panel wr-acc" id="wrAcc" aria-label="Needs attention"></section>
+    </div>
+    <section class="panel wr-ins t-w" data-views="overview" aria-labelledby="wrInsT">
+      <div class="panel-h"><div><h2 id="wrInsT">Insights <span class="count" id="wrInsN"></span></h2><p>Computed from the fixed sample tracker, status ledger and inbox.</p></div></div>
+      <div class="wr-ins-list" id="wrIns"></div>
+    </section>
+
+    <section class="panel board" id="board" aria-labelledby="boardTitle" data-views="overview">
+      <div class="panel-h">
+        <div>
+          <h2 id="boardTitle">Pipeline</h2>
+          <p>Every role from discovery to offer. Lines show where each stage feeds the next.</p>
+        </div>
+        <div class="seg-toggle" role="group" aria-label="View">
+          <button type="button" data-view="2d" aria-pressed="false">2D</button>
+          <button type="button" data-view="3d" aria-pressed="true">3D</button>
+        </div>
+      </div>
+      <div class="board-body" id="boardBody">
+        <div class="floor" aria-hidden="true"></div>
+        <div class="lanes" id="lanes"></div>
+        <canvas id="links" aria-hidden="true"></canvas>
+      </div>
+    </section>
+
+    <aside class="sidecol" data-views="overview applications">
+      <section class="panel" id="actions" aria-labelledby="actTitle" data-views="overview">
+        <div class="panel-h"><h2 id="actTitle">Next actions</h2></div>
+        <ul class="next" id="next"></ul>
+      </section>
+      <section class="panel" aria-labelledby="selTitle" data-views="overview applications">
+        <div class="panel-h"><h2 id="selTitle">Selected role</h2></div>
+        <div class="sel" id="sel"></div>
+      </section>
+    </aside>
+
+    <section class="panel apps" id="apps" aria-labelledby="appsTitle" data-views="overview applications">
+      <div class="panel-h">
+        <h2 id="appsTitle">Applications <span class="count" id="appsCount"></span></h2>
+        <div class="filters">
+          <select id="fStage" aria-label="Stage"></select>
+          <select id="fTime" aria-label="Time range">
+            <option value="">All time</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Company</th><th>Role</th><th>Stage</th><th>Date</th><th>Score</th><th>Next step</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <button type="button" class="more" id="moreRows" hidden></button>
+    </section>
+
+    <section class="panel activity" id="activity" aria-labelledby="actvTitle" data-views="overview">
+      <div class="activity-h">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12.5h4l2.5-6 4.5 12 2.5-6H21"/></svg>
+        <div><h2 id="actvTitle">Recent activity</h2><p>Latest moves from the status ledger.</p></div>
+      </div>
+      <ol class="timeline" id="timeline"></ol>
+    </section>
+
+    <!-- Interviews -->
+    <section class="page" data-views="interviews" aria-labelledby="ivTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="ivTitle">Interviews</h1><p>Click any interview to open it in Google Calendar.</p></div>
+        <div class="page-btns">
+          <a class="btn" href="https://calendar.google.com/calendar/r/week" target="_blank" rel="noopener noreferrer">Open Google Calendar</a>
+          <button type="button" class="btn primary" data-iv-add>Add interview</button>
+        </div>
+      </div>
+      <div class="mini-kpis" id="ivKpis"></div>
+      <section class="panel cal-panel"><div class="panel-h"><div><h2>Next two weeks</h2><p>Interviews, follow-ups, deadlines and study time. Click anything to open it in Google Calendar.</p></div><div class="cal-legend" id="ivCalLegend"></div></div><div class="cal14" id="ivCal"></div></section>
+      <div class="two-col iv-cols">
+        <div class="col-stack">
+          <section class="panel"><div class="panel-h"><h2>Upcoming <span class="count" id="ivUpCount"></span></h2></div><div class="ivlist" id="ivUpcoming"></div></section>
+          <section class="panel"><div class="panel-h"><h2>Follow-ups <span class="count" id="ivFuCount"></span></h2></div><div class="fulist" id="ivFollowups"></div></section>
+        </div>
+        <section class="panel"><div class="panel-h"><h2>Past <span class="count" id="ivPastCount"></span></h2></div><div class="ivlist" id="ivPast"></div></section>
+      </div>
+    </section>
+
+    <!-- Inbox -->
+    <section class="page" data-views="inbox" aria-labelledby="inTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="inTitle">Inbox</h1><p>New postings from the daily scan, sorted by Jev. Click a role to open the posting.</p></div>
+      </div>
+      <div class="ptabs" id="inTabs" role="group" aria-label="Inbox section"></div>
+      <section class="panel" aria-labelledby="liTitle" id="inSecMessages" hidden>
+        <div class="panel-h"><div><h2 id="liTitle">LinkedIn messages <span class="count" id="liCount"></span></h2><p id="liSub">Messages and InMail, read-only. Click one to open it on LinkedIn.</p></div>
+          <button type="button" class="btn" id="liRefresh">Refresh</button></div>
+        <div class="toolbar"><div class="chips-f" id="liFilter" role="group" aria-label="Which messages"></div></div>
+        <ul class="li-list" id="liRows"></ul>
+        <button type="button" class="more" id="liMore" hidden></button>
+      </section>
+      <section class="panel" id="inSecPostings" aria-label="Postings">
+        <div class="toolbar">
+          <div class="chips-f" id="inLanes" role="group" aria-label="Jev lane"></div>
+          <label class="tog"><input type="checkbox" id="inRemote"> Remote US only</label>
+          <label class="tog"><input type="checkbox" id="inLoc"> Fits location policy</label>
+          <select id="inSort" aria-label="Sort">
+            <option value="jev">Best Jev match</option>
+            <option value="stack">Best sample fit</option>
+            <option value="posted">Newest posted</option>
+            <option value="company">Company A to Z</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl-in">
+            <thead><tr><th>Company</th><th>Role</th><th>Location</th><th>Jev lane</th><th>Confidence</th><th>Remote US</th><th title="Illustrative fit score: sample skills, experience, schedule and location">Fit</th><th>Posted</th></tr></thead>
+            <tbody id="inRows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="more" id="inMore" hidden></button>
+      </section>
+      <section class="panel" aria-labelledby="osTitle" id="inSecOnsite" hidden>
+        <div class="panel-h"><div><h2 id="osTitle">On-site (Texas) <span class="count" id="osCount"></span></h2><p>On-site and hybrid jobs in Texas from the last 30 days. Your remote-only rule keeps these out of Postings. Craigslist posts: check who posted before you reply.</p></div></div>
+        <div class="toolbar"><div class="chips-f" id="osFilter" role="group" aria-label="Which on-site jobs"></div></div>
+        <div class="table-wrap">
+          <table class="tbl-in">
+            <thead><tr><th>Company</th><th>Role</th><th>Location</th><th>Source</th><th>Found</th></tr></thead>
+            <tbody id="osRows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="more" id="osMore" hidden></button>
+      </section>
+    </section>
+
+    <!-- Stacking -->
+    <section class="page" data-views="stacking" aria-labelledby="skTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="skTitle">Work fit</h1><p>A fictional work-fit scenario: compare skills, schedule and location, then review the candidate’s example weekly capacity.</p></div>
+        
+      </div>
+      <div id="skBody"><p class="loading">Loading…</p></div>
+    </section>
+
+    <!-- Documents -->
+    <section class="page" data-views="documents" aria-labelledby="docTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="docTitle">Documents <span class="count" id="docCount"></span></h1><p id="docPath">Tailored resumes, cover letters, job descriptions, reports and interview prep, per job.</p></div>
+        <div class="page-btns"><button type="button" class="btn" data-open-folder="">Open folder</button></div>
+      </div>
+      <section class="panel">
+        <div class="toolbar">
+          <div class="chips-f" id="docFilter" role="group" aria-label="Which roles"></div>
+          <select id="docSort" aria-label="Sort">
+            <option value="recent">Most recent activity</option>
+            <option value="company">Company A to Z</option>
+          </select>
+        </div>
+        <div class="doc-grid" id="docGrid"></div>
+        <button type="button" class="more" id="docMore" hidden></button>
+      </section>
+    </section>
+
+    <!-- Answers -->
+    <section class="page" data-views="answers" aria-labelledby="abTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="abTitle">Answers</h1><p>The questions every application asks. The agent fills these for you, logs any it can't answer, and learns from the forms you've already sent.</p></div>
+      </div>
+      <div id="abBody"><p class="loading">Loading answers…</p></div>
+    </section>
+
+    <!-- Learn -->
+    <section class="page" data-views="learn" aria-labelledby="lnTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="lnTitle">Learn</h1><p>What your target jobs keep asking for that your CV doesn't show yet, a step-by-step path for each, and the certifications worth getting.</p></div>
+      </div>
+      <div id="lnBody"><p class="loading">Loading…</p></div>
+    </section>
+
+    <!-- Platforms -->
+    <section class="page" data-views="platforms" aria-labelledby="pfTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="pfTitle">Platforms</h1><p>AI-training gig platforms and local or freelance gig sites: what each one does, how you get in, what it pays, and what people on Reddit say. Sign up yourself on the ones you like, then set your status here.</p></div>
+      </div>
+      <div id="pfBody"><p class="loading">Loading…</p></div>
+    </section>
+
+    <!-- Websites -->
+    <section class="page wb-page" data-views="websites" aria-labelledby="wbTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="wbTitle">Powerful Websites</h1><p>Every saved website, sorted by category, with what it does and its last link check. The download is a clean copy with no name or account links on it.</p></div>
+        <div class="page-btns"><a class="btn primary" href="/download/websites.xlsx" download>Download Spreadsheet</a><a class="btn" href="/download/websites.csv" download>Download CSV</a></div>
+      </div>
+      <div id="wbBody"><p class="loading">Loading…</p></div>
+    </section>
+
+    <!-- Targeting -->
+    <section class="page" data-views="targeting" aria-labelledby="tgTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="tgTitle">Targeting</h1><p>Explore profiles, edit sample parameters and save presets in this tab. The underlying system uses these settings to guide searches and scoring; this demo keeps job scores fixed.</p></div>
+      </div>
+      <div id="tgBody"><p class="loading">Loading presets…</p></div>
+      <div id="tgRules"></div>
+    </section>
+
+    <!-- Scans -->
+    <section class="page" data-views="scans" aria-labelledby="scTitle" hidden>
+      <div class="page-h">
+        <div><h1 id="scTitle">Scans</h1><p id="scSched">Daily scan of job boards, then Jev sorting, then backup.</p></div>
+      </div>
+      <div class="mini-kpis" id="scKpis"></div>
+      <section class="panel"><div class="panel-h"><h2>Recent runs</h2></div><div class="table-wrap"><table><thead><tr><th>Run</th><th>Boards</th><th>Found</th><th>Off-title</th><th>Off-location</th><th>Duplicates</th><th>New</th><th>Errors</th></tr></thead><tbody id="scRuns"></tbody></table></div></section>
+      <section class="panel" aria-labelledby="sbTitle">
+        <div class="panel-h"><div><h2 id="sbTitle">Job boards <span class="count" id="sbCount"></span></h2><p>Every company career site and job board in portals.yml, with what the last scan got from it.</p></div></div>
+        <div class="toolbar"><div class="chips-f" id="sbFilter" role="group" aria-label="Which boards"></div></div>
+        <div class="table-wrap">
+          <table class="tbl-sb">
+            <thead><tr><th>Name</th><th>Type</th><th>Last scan</th><th>What to do</th><th>Checked</th></tr></thead>
+            <tbody id="sbRows"></tbody>
+          </table>
+        </div>
+        <button type="button" class="more" id="sbMore" hidden></button>
+      </section>
+      <div class="two-col">
+        <section class="panel"><div class="panel-h"><div><h2>Latest scan log</h2><p>Last lines of data/scheduled-scan.log.</p></div></div><pre class="log" id="scLog"></pre></section>
+        <section class="panel"><div class="panel-h"><h2>Jev sort of the inbox</h2></div><div id="scJev"></div></section>
+      </div>
+    </section>
+
+    <!-- Mail -->
+    <section class="page" data-views="mail" aria-labelledby="mlTitle" hidden>
+      <div class="page-h"><div><h1 id="mlTitle">Mail</h1><p id="mlSub"></p></div></div>
+      <div class="mini-kpis" id="mlKpis"></div>
+      <section class="panel" aria-label="Mail log">
+        <div class="ptabs in-panel" id="mlTabs" role="group" aria-label="Which mail"></div>
+        <div id="mlBody"></div>
+        <p class="empty-p" id="mlFoot"></p>
+      </section>
+    </section>
+
+    <!-- Settings -->
+    <section class="page" data-views="settings" aria-labelledby="stTitle" hidden>
+      <div class="page-h"><div><h1 id="stTitle">Settings</h1><p>Saved in this browser only.</p></div></div>
+      <section class="panel settings" id="stBody"></section>
+    </section>
+  </main>
+</div>
+
+<dialog class="dlg" id="ivDialog" aria-labelledby="ivDlgTitle">
+  <form method="dialog" id="ivForm">
+    <h2 id="ivDlgTitle">Add interview</h2>
+    <input type="hidden" name="ivid">
+    <div class="form-grid">
+      <label>Company<input name="company" required list="ivCoList" autocomplete="off"></label>
+      <label>Tracker row<select name="row"></select></label>
+      <label>Role<input name="role" autocomplete="off"></label>
+      <label>Round<select name="round"></select></label>
+      <label>Date<input name="date" type="date"></label>
+      <label>Time<input name="time" type="time"></label>
+      <label class="wide">Location<input name="location" placeholder="Google Meet, Teams, or an address" autocomplete="off"></label>
+      <label class="wide">Google Calendar link<input name="calendarUrl" type="url" placeholder="https://www.google.com/calendar/event?eid=…" autocomplete="off"></label>
+      <label class="wide">Meeting link<input name="meetUrl" type="url" placeholder="https://meet.google.com/…" autocomplete="off"></label>
+      <label class="wide">Notes<textarea name="notes" rows="3" maxlength="1000"></textarea></label>
+    </div>
+    <datalist id="ivCoList"></datalist>
+    <p class="form-err" id="ivErr" role="alert"></p>
+    <div class="dlg-btns">
+      <button type="button" class="btn" value="cancel" data-dlg-close>Cancel</button>
+      <button type="submit" class="btn primary" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="mission.js?v=interactive-1"></script>
+</body>
+</html>
+
+
+
