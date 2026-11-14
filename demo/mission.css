@@ -807,6 +807,7 @@ td.score.hi { color: var(--c-interview); font-weight: 700; }
 #inRows tr.stk-row .stk { margin-top: 2px; max-width: 760px; }
 
 /* Targeting: how postings are graded */
+#tgScoreExamples { scroll-margin-top: 96px; }
 .score-examples { display: grid; margin: 16px 0; }
 .score-example { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr); gap: 18px 28px; padding: 20px 0; border-top: 1px solid var(--line); }
 .score-example h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.4; }
