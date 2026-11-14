@@ -485,7 +485,7 @@ function renderSelInner() {
     box.innerHTML = `<div class="sel-id"><div class="mono">${esc(initials(x.company))}</div><div><b>${esc(x.company)}</b><small>${esc(x.role)}</small></div></div>
       <div class="chips"><span class="chip">Inbox</span>${j ? `<span class="chip acc">${esc(JEV_LANE[j.lane] || j.lane)}</span>` : ''}${j && j.remote_us >= 0.5 ? '<span class="chip ghost">Remote (US)</span>' : ''}</div>
       <dl><dt>Posted</dt><dd>${shortDate(x.posted)}</dd><dt>Location</dt><dd title="${esc(x.loc)}">${esc(x.loc || '—')}</dd>
-      <dt>Jev lane</dt><dd>${j ? esc(JEV_LANE[j.lane] || j.lane) : 'Not sorted'}</dd><dt>Confidence</dt><dd>${j ? Number(j.conf).toFixed(2) : '—'}</dd>
+      <dt>Jev lane (snapshot)</dt><dd>${j ? esc(JEV_LANE[j.lane] || j.lane) : 'Not sorted'}</dd><dt>Snapshot confidence</dt><dd>${j ? Number(j.conf).toFixed(2) : '—'}</dd>
       <dt>Remote, US-eligible</dt><dd>${j && j.remote_us != null ? `${Math.round(j.remote_us * 100)}%` : '—'}</dd><dt>Source</dt><dd>${esc(hostOf(x.url))}</dd></dl>
       ${stackBlock(x)}
       <div class="btns one">${posting}</div>`;
@@ -767,21 +767,28 @@ async function deleteIv(id) {
 
 // ---------------------------------------------------------------- sample fit
 
-// `stack` comes from stack-score.mjs through the server: a 0-100 score with
-// reasons, the hours window it found, overlap with the J1 day, and exposure
-// checks from data/stack-context.yml. basis 'jd' means the posting was read.
+// The static demo adapter supplies 0–100 sample scores and their point breakdown.
 const STACK_GRADE = { strong: 'Strong', ok: 'Workable', weak: 'Weak' };
 let inboxOpen = null; // inbox row whose sample fit details are expanded
 const stackRank = (x) => (x.stack ? x.stack.score + (x.stack.basis === 'jd' ? 0.5 : 0) : -1);
-const stackTitle = (s) => `${STACK_GRADE[s.grade] || s.grade} · ${s.basis === 'jd' ? 'illustrative sample criteria' : 'title only'}${s.reasons.length ? `\n${s.reasons.map((r) => `${r.pts > 0 ? '+' : ''}${r.pts} ${r.label}`).join('\n')}` : ''}`;
+const stackTitle = (s) => `${STACK_GRADE[s.grade] || s.grade} · ${s.basis === 'demo' ? 'calculated sample fit' : 'illustrative sample criteria'}${s.reasons.length ? `\n${s.reasons.map((r) => `${r.pts > 0 ? '+' : ''}${r.pts} ${r.label}`).join('\n')}` : ''}`;
 function stackCell(x) {
   const s = x.stack;
   if (!s) return '—';
-  return `<span class="chip sc sc-${s.grade}${s.basis === 'jd' ? '' : ' sc-title'}" title="${esc(stackTitle(s))}">${s.score}</span>`;
+  return `<span class="chip sc sc-${s.grade}${s.basis === 'jd' || s.basis === 'demo' ? '' : ' sc-title'}" title="${esc(stackTitle(s))}">${s.score}</span>`;
 }
 function stackBlock(x) {
   const s = x.stack;
   if (!s) return '';
+  if (s.basis === 'demo') {
+    const change = s.previousScore == null ? '' : `<span class="score-change">${s.previousScore} → ${s.score} (${s.delta > 0 ? '+' : ''}${s.delta} points)</span>`;
+    return `<div class="stk">
+      <div class="stk-head"><span class="chip sc sc-${s.grade}">${s.score}/100</span><b>${STACK_GRADE[s.grade]}</b>${change}</div>
+      <p class="hint">Calculated sample fit · ${(s.score / 20).toFixed(1)}/5 rating · base ${s.base}</p>
+      <p class="score-terms">Sample terms: ${esc(s.details?.location || 'Location not stated')} · ${esc(s.details?.comp || 'Pay not stated')}</p>
+      <ul class="stk-why">${s.reasons.map((r) => `<li class="${r.pts > 0 ? 'plus' : r.pts < 0 ? 'minus' : 'neutral'}"><b>${r.pts > 0 ? '+' : ''}${r.pts}</b> ${esc(r.label)}</li>`).join('')}</ul>
+    </div>`;
+  }
   const why = s.reasons.slice(0, 5).map((r) => `<li class="${r.pts > 0 ? 'plus' : 'minus'}">${r.pts > 0 ? '+' : ''}${r.pts} ${esc(r.label)}</li>`).join('');
   const ov = s.overlap ? `<li>${s.overlap.hours > 0 ? `<b>${s.overlap.hours} h/day</b> overlaps the J1 window (${esc(s.overlap.window)}${s.overlap.assumedTz ? ', time zone assumed' : ''})` : 'No overlap with the J1 window'}</li>`
     : s.hours ? `<li>Hours stated: ${esc(s.hours.raw)}${DATA.stackContext?.jobs?.length ? '' : ' · add your J1 hours in data/stack-context.yml to see the overlap'}</li>` : '';
@@ -966,11 +973,11 @@ function renderTargetingInner() {
       <h3>Edit sample parameters</h3>
       <form class="form-grid" id="tgParams" data-row="${esc(PRESETS.active)}">
         <label class="wide">Target roles (comma-separated)<input name="roles" value="${esc(roles.join(', '))}" maxlength="972" required autocomplete="off"></label>
-        <label>Location preference<input name="location" value="${esc(p.location || '')}" maxlength="160" required autocomplete="off"></label>
-        <label>Compensation preference<input name="comp" value="${esc(p.comp || '')}" maxlength="160" required autocomplete="off"></label>
-        <div class="wide"><button type="submit" class="btn">Apply sample parameters</button></div>
+        <label>Location preference<input name="location" value="${esc(p.location || '')}" maxlength="160" required autocomplete="off" aria-describedby="tgLocationHelp"><small id="tgLocationHelp">Try Remote, Hybrid, On-site, a city/state, or Any.</small></label>
+        <label>Minimum compensation<input name="comp" value="${esc(p.comp || '')}" maxlength="160" required autocomplete="off" aria-describedby="tgCompHelp"><small id="tgCompHelp">Try $90,000/year or $45/hour. Rates are not converted.</small></label>
+        <div class="wide"><button type="submit" class="btn">Apply & recalculate scores</button></div>
       </form>
-      <p class="hint">These settings update the sample brief below. Job records and scores stay fixed; no live AI evaluation runs.</p>
+      <p class="hint">Apply changes to recalculate sample fit across the dashboard. The examples below show what changed and why. Unclear or missing terms earn zero points; no live AI evaluation runs.</p>
     </section>
     <section class="panel pad">
       <div class="sel-sub">Presets</div>
@@ -982,6 +989,12 @@ function renderTargetingInner() {
       <button type="button" class="linkish" id="tgSessionReset">Reset this demo session</button>
     </section>
   </div>
+  <section class="panel pad" id="tgScoreExamples" aria-labelledby="tgScoresTitle">
+    <h2 id="tgScoresTitle" tabindex="-1">See your parameters change the scores</h2>
+    <p class="hint" role="status" aria-live="polite">${DATA.demoScoring?.hasPrevious ? `${fmt(DATA.demoScoring.changed)} of ${fmt(DATA.demoScoring.total)} sample scores changed on the last update.` : 'Scores below use your current parameters.'} Try Project Coordinator, Remote and $60,000/year; then raise the minimum to $110,000/year and apply again.</p>
+    <div class="score-examples">${(DATA.demoScoring?.examples || []).map((x) => `<article class="score-example"><div><h3>${esc(x.role)}</h3><p>${esc(x.company)}</p><button type="button" class="linkish" data-key="${esc(x.key)}">Open sample record</button></div>${stackBlock(x)}</article>`).join('')}</div>
+    <p class="hint">These same three fictional postings stay here for comparison, regardless of the header filter. Scores use simple browser rules: base 50 plus role, location and pay points. The /5 rating is the /100 score divided by 20.</p>
+  </section>
   <section class="panel pad"><div class="sel-sub">Search queries on (${fmt(queries.length)})</div>
     <div class="chips wrap">${queries.map((q) => `<span class="chip ghost" title="${esc(q.query)}">${esc(q.name || q.query)}</span>`).join('') || '<span class="chip ghost">None</span>'}</div></section>`;
   renderRules();
@@ -995,9 +1008,9 @@ function renderRules() {
   if (!box) return;
   const R = RULESDATA;
   if (!R) { box.innerHTML = '<p class="loading">Loading the grading rules…</p>'; return; }
-  const pts = (n) => `<span class="pts ${n > 0 ? 'plus' : 'minus'}">${n > 0 ? '+' : ''}${n}</span>`;
+  const pts = (n) => `<span class="pts ${n > 0 ? 'plus' : n < 0 ? 'minus' : 'neutral'}">${n > 0 ? '+' : ''}${n}</span>`;
   const rules = [...R.stack.rules, ...(R.stack.extra || [])];
-  const stackRows = rules.map((r) => `<li>${pts(r.pts)}<span>${esc(r.label)}</span><small>${r.scope === 'title' ? 'title' : 'title + JD'}</small></li>`).join('');
+  const stackRows = rules.map((r) => `<li>${pts(r.pts)}<span>${esc(r.label)}</span><small>${esc(r.scope)}</small></li>`).join('');
   const briefCols = (R.brief || []).map((s) => `<div class="rule-sec"><h3>${esc(s.title)}</h3><ul>${s.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('');
   const profs = (R.profiles || []).map((pf) => `<div class="rule-sec"><h3>${esc(pf.label)}</h3>${pf.description ? `<p>${esc(pf.description)}</p>` : ''}
     ${pf.title_keywords.length ? `<div class="sel-sub">Titles</div><div class="chips wrap">${pf.title_keywords.slice(0, 40).map((k) => `<span class="chip ghost">${esc(k.replace(/^(word|stem):/, ''))}</span>`).join('')}${pf.title_keywords.length > 40 ? `<span class="chip ghost">+${pf.title_keywords.length - 40} more</span>` : ''}</div>` : ''}
@@ -1006,11 +1019,11 @@ function renderRules() {
   box.innerHTML = `<h2 class="rules-h">How postings are graded</h2>
   <div class="two-col rules">
     <section class="panel pad"><div class="sel-sub">Sample fit points</div>
-      <p class="hint">Every posting starts at ${R.stack.base}. Each rule that matches the title or the job description moves it once. ${R.stack.grades.strong}+ is Strong, ${R.stack.grades.ok}+ is Workable, under that Weak. These criteria and scores are fictional examples; no live scan runs in this demo.</p>
+      <p class="hint">Every posting starts at ${R.stack.base}. Apply one role, one location and one pay result, then keep the total between 0 and 100. ${R.stack.grades.strong}+ is Strong, ${R.stack.grades.ok}+ is Workable, under that Weak. A salary range earns +10 if its lower end meets your minimum, −10 if its upper end is below it, otherwise 0. These are illustrative browser rules; no live AI scoring or scan runs.</p>
       <ul class="rule-list">${stackRows}</ul></section>
-    <section class="panel pad"><div class="sel-sub">Jev lanes (AI sort after every scan)</div>
+    <section class="panel pad"><div class="sel-sub">Recorded AI-sort snapshot</div>
       <ul class="plain lanes-list">${(R.jev || []).map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
-      <p class="hint">Jev reads only the posting's public fields plus the targeting brief below, and returns a lane, a confidence, remote-US and location-policy fit. The Inbox sorts by that confidence.</p>
+      <p class="hint">The original system's AI sort uses public posting fields and the targeting brief to return a lane and confidence. Those recorded values stay unchanged here; the demo recalculates the separate fit score and /5 rating.</p>
       <div class="sel-sub" style="margin-top:14px">Dashboard profiles (the header switch)</div>
       <p class="hint">The switch filters what you see; the preset decides what the scan hunts. A job is tagged by its title, location and company against these lists.</p>
       ${profs}</section>
@@ -1025,7 +1038,7 @@ function renderStacking() {
   const box = $('#skBody');
   if (!box || !DATA) return;
   const rows=M.lanes.inbox.filter(x=>x.stack).sort((a,b)=>b.stack.score-a.stack.score).slice(0,8);
-  box.innerHTML='<div class="two-col"><section class="panel pad"><h2>Example fit review</h2><p class="hint">A fictional candidate compares relevant skills, experience, schedule and location. These sample scores do not describe real jobs or Austin’s personal criteria.</p><ul class="plain">'+rows.map(x=>'<li><b>'+esc(x.company)+'</b> — '+esc(x.role)+stackBlock(x)+'</li>').join('')+'</ul><a class="btn" href="#targeting">Read the example rules</a></section><section class="panel pad"><h2>Example weekly capacity</h2><p>A fictional 40-hour planning budget includes 12 hours of project work and 2 hours of portfolio practice. These values are illustrative.</p><p class="hint">The live dashboard can calculate capacity from configured work and study blocks. This copy contains no personal schedule or accounts.</p><a class="btn" href="#interviews">Explore the sample calendar</a></section></div>';
+  box.innerHTML='<div class="two-col"><section class="panel pad"><h2>Example fit review</h2><p class="hint">Your applied role, location and minimum pay preferences set these illustrative scores. They do not describe real jobs or Austin’s personal criteria.</p><ul class="plain">'+rows.map(x=>'<li><b>'+esc(x.company)+'</b> — '+esc(x.role)+stackBlock(x)+'</li>').join('')+'</ul><a class="btn" href="#targeting">Change parameters and see the rules</a></section><section class="panel pad"><h2>Example weekly capacity</h2><p>A fictional 40-hour planning budget includes 12 hours of project work and 2 hours of portfolio practice. These values are illustrative.</p><p class="hint">The live dashboard can calculate capacity from configured work and study blocks. This copy contains no personal schedule or accounts.</p><a class="btn" href="#interviews">Explore the sample calendar</a></section></div>';
 }
 
 async function presetAction(url, body, okMsg) {
@@ -1036,8 +1049,13 @@ async function presetAction(url, body, okMsg) {
   // Clear the name box only for a save, and only if it still holds the saved name.
   const box = $('#tgSave') && fieldOf($('#tgSave'), 'pname');
   if (url.endsWith('/save') && box && box.value.trim() === body.name) box.value = '';
-  await loadPresets();
-  refresh();
+  if (await refresh()) {
+    await loadPresets();
+    if (url.endsWith('/params')) {
+      $('#tgScoresTitle')?.focus({ preventScroll: true });
+      $('#tgScoreExamples')?.scrollIntoView({ block: 'start' });
+    }
+  }
 }
 
 // ---------------------------------------------------------------- scans page
@@ -1911,10 +1929,11 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('#tgSessionReset')) return presetAction('/api/presets/session-reset', {}, 'Demo session reset to the original examples.');
   if (e.target.closest('#stRefresh')) return refresh().then((ok) => ok && toast('Data refreshed.'));
   const item = e.target.closest('[data-key]');
-  if (item && item.closest('#lanes, #rows, #next, #alRows, .ivlist, .doc-grid')) {
+  if (item && item.closest('#lanes, #rows, #next, #alRows, .ivlist, .doc-grid, #tgScoreExamples')) {
+    if (item.closest('#tgScoreExamples') && !findItem(item.dataset.key)) setProfile('all');
     select(item.dataset.key);
     if (item.dataset.go) location.hash = item.dataset.go;
-    else if (item.closest('#alRows')) showSelection();
+    else if (item.closest('#alRows, #tgScoreExamples')) showSelection();
     return;
   }
   const step = e.target.closest('#next [data-status]');
@@ -1926,7 +1945,7 @@ document.addEventListener('submit', (e) => {
   if (e.target.matches('.sel-status')) { e.preventDefault(); saveStatus(e.target); }
   if (e.target.id === 'tgParams') {
     e.preventDefault();
-    presetAction('/api/presets/params', { target_roles: fieldOf(e.target, 'roles').value.split(',').map((x) => x.trim()).filter(Boolean), location: fieldOf(e.target, 'location').value.trim(), comp: fieldOf(e.target, 'comp').value.trim() }, 'Sample parameters applied in this tab. Scores remain fixed.');
+    presetAction('/api/presets/params', { target_roles: fieldOf(e.target, 'roles').value.split(',').map((x) => x.trim()).filter(Boolean), location: fieldOf(e.target, 'location').value.trim(), comp: fieldOf(e.target, 'comp').value.trim() }, 'Parameters applied. Sample scores recalculated in this tab.');
   }
   if (e.target.id === 'tgSave') { e.preventDefault(); const name = fieldOf(e.target, 'pname').value.trim(); if (name) presetAction('/api/presets/save', { name }, `Saved preset "${name}".`); }
 });

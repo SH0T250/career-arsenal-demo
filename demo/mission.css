@@ -807,6 +807,17 @@ td.score.hi { color: var(--c-interview); font-weight: 700; }
 #inRows tr.stk-row .stk { margin-top: 2px; max-width: 760px; }
 
 /* Targeting: how postings are graded */
+.score-examples { display: grid; margin: 16px 0; }
+.score-example { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr); gap: 18px 28px; padding: 20px 0; border-top: 1px solid var(--line); }
+.score-example h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.4; }
+.score-example p { margin: 6px 0; }
+.score-example .stk { margin: 0; }
+.score-example .linkish { margin-top: 8px; min-height: 36px; }
+.score-terms, .score-change, #tgParams small { font-size: 12.5px; line-height: 1.5; color: var(--silver); overflow-wrap: anywhere; }
+.score-change { font-variant-numeric: tabular-nums; }
+.stk-why li.neutral, .pts.neutral { color: var(--silver); }
+.score-example .stk-why { line-height: 1.6; }
+@media (max-width: 760px) { .score-example { grid-template-columns: minmax(0, 1fr); gap: 12px; } }
 .rules-h { font-size: 18px; margin: 22px 0 10px; letter-spacing: -.01em; }
 .rule-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .rule-list li { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--line); }
