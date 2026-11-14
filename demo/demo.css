@@ -5,4 +5,5 @@
 .demo-bar button:focus-visible, .demo-bar .demo-action:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .demo-bar b { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 5px; background: rgba(0,0,0,.18); }
 .top { top: 0; }
+.agent-note { padding: 16px 20px; font-size: 14px; line-height: 1.6; }
 @media (max-width: 760px) { .demo-bar { font-size: 12px; padding: 7px 14px; } }

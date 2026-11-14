@@ -2,6 +2,8 @@
 
 Austin Jones's custom interface for a job-search workflow, with an opening tour and an interactive sample dashboard. Profiles, parameters and scoring were already part of the underlying system.
 
+Bring your own AI agent to run the full system. Austin uses Claude Code Desktop; users can choose their preferred separate agent. The dashboard has no built-in AI agent. This public browser demo needs no agent or sign-in.
+
 - [Showcase and guided tour](https://sh0t250.github.io/career-arsenal-demo/)
 - [Interactive sample demo](https://sh0t250.github.io/career-arsenal-demo/demo/?theme=warroom)
 - [Interactive system map](https://sh0t250.github.io/career-arsenal-demo/architecture.html)
