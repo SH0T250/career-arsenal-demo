@@ -241,7 +241,7 @@ td.empty { color: var(--muted); text-align: center; padding: 22px; }
 .kpi { text-decoration: none; color: inherit; transition: transform .15s, box-shadow .2s; }
 .kpi:hover { transform: translateY(-1px); box-shadow: inset 0 0 24px -12px var(--tone), 0 0 26px -10px var(--tone); }
 .main[data-view="applications"] { grid-template-areas: "alerts alerts" "remind remind" "apps side"; }
-.main[data-view="applications"] .sidecol { position: sticky; top: 83px; align-self: start; }
+.main[data-view="applications"] .sidecol { position: sticky; top: 83px; align-self: start; max-height: calc(100dvh - 99px); overflow-y: auto; scrollbar-gutter: stable; }
 .main:not([data-view="overview"]):not([data-view="applications"]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; }
 .main:not([data-view="overview"]):not([data-view="applications"]) .alerts { grid-area: auto; }
 .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; align-content: start; }
@@ -590,7 +590,7 @@ td.score.hi { color: var(--c-interview); font-weight: 700; }
   .main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "alerts" "remind" "kpis" "board" "side" "apps" "act"; grid-template-rows: none; }
   .sidecol { display: grid; grid-template-columns: 1fr 1fr; }
   .main[data-view="applications"] { grid-template-areas: "alerts" "remind" "side" "apps"; }
-  .main[data-view="applications"] .sidecol { position: static; grid-template-columns: minmax(0, 1fr); }
+  .main[data-view="applications"] .sidecol { position: static; grid-template-columns: minmax(0, 1fr); max-height: none; overflow: visible; }
   .cday { min-height: 150px; padding: 8px; }
   .cday-h b { font-size: 21px; }
 }
