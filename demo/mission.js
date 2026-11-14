@@ -16,6 +16,8 @@ const DAY = 86400000;
 const addDays = (d, k) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + k);
 const dayDiff = (a, b) => Math.round((a - b) / DAY);
 const parseIso = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+// A bare YYYY-MM-DD is a local calendar day; new Date() would read it as UTC midnight and show the day before.
+const fmtShort = (iso) => { const d = !iso ? null : /^\d{4}-\d{2}-\d{2}$/.test(iso) ? parseIso(iso) : new Date(iso); return d && !isNaN(d) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''; };
 const shortDate = (s) => { const d = parseIso(s); return d ? `${MON[d.getMonth()]} ${d.getDate()}` : '—'; };
 const daysSince = (s) => { const d = parseIso(s); return d ? Math.max(0, Math.round((parseIso(today()) - d) / DAY)) : 0; };
 const relDay = (s) => {

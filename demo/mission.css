@@ -886,3 +886,9 @@ td.score.hi { color: var(--c-interview); font-weight: 700; }
 @media (max-width: 760px) { .sk-top li { grid-template-columns: 44px 1fr; } .sk-top li small.why { grid-column: 2; text-align: left; } }
 #skBody .col-stack { align-self: start; }
 #skBody .col-stack .panel { flex: 0 0 auto; }
+
+/* Phone: a Stacking list row holds a name, a role and a score block. Let the score block drop to its own line instead of pushing the page wider than the screen. */
+@media (max-width: 900px) {
+  #skBody ul.plain li { flex-wrap: wrap; }
+  #skBody ul.plain li > .stk { flex: 1 1 100%; min-width: 0; }
+}
