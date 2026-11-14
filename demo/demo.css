@@ -1,5 +1,8 @@
 /* demo.css — the one strip the static demo adds above the real dashboard. */
-.demo-bar { display: flex; align-items: center; gap: 12px; padding: 8px 20px; font: 500 13px/1.3 var(--body); color: var(--acc-ink); background: var(--acc); }
+.demo-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 8px 20px; font: 500 13px/1.3 var(--body); color: var(--acc-ink); background: var(--acc); }
+.demo-bar button { padding: 8px 12px; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+.demo-bar button:hover { background: rgba(0,0,0,.08); }
+.demo-bar button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .demo-bar b { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 5px; background: rgba(0,0,0,.18); }
 .top { top: 0; }
 @media (max-width: 760px) { .demo-bar { font-size: 12px; padding: 7px 14px; } }

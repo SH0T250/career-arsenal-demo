@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Career Arsenal · Mission Control (demo)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="demo.css">
-<script src="demo.js?v=scoring-1"></script>
-<link rel="stylesheet" href="mission.css?v=scoring-2">
+<link rel="stylesheet" href="demo.css?v=workflow-1">
+<script src="demo.js?v=workflow-1"></script>
+<link rel="stylesheet" href="mission.css?v=workflow-1">
 <link rel="stylesheet" href="warroom.css">
 <script src="theme.js?v=sample-2"></script>
 </head>
 <body>
-<div class="demo-bar" id="demoBar"><a href="../" style="color:inherit;font-weight:600;white-space:nowrap">Back to tour</a><b>Demo</b><span id="demoMsg">Sample data · adjustable fit scores · edits stay in this tab · no live scans or sends.</span></div>
+<div class="demo-bar" id="demoBar"><a href="../" style="color:inherit;font-weight:600;white-space:nowrap">Back to tour</a><b>Demo</b><span id="demoMsg">Sample jobs, interviews and scores · changes stay in this tab · no real accounts connected.</span><button type="button" data-demo-start>Try sample workflow</button><button type="button" data-demo-reset>Reset demo</button></div>
 <header class="top">
   <a class="brand" href="#overview"><b class="t-g">Career Arsenal</b> <span class="t-g">Mission control</span><svg class="brand-mark t-w" viewBox="0 0 48 48" aria-hidden="true"><path class="ring" d="M37 13.1A17 17 0 1 0 37 34.9"/><path class="delta" d="M24 11l8.5 21.5L24 26.5l-8.5 6z"/></svg><b class="t-w">Career Arsenal</b></a>
   <span class="wr-pill t-w" id="wrDate"></span>
@@ -114,7 +114,7 @@
       <div class="panel-h">
         <div>
           <h2 id="boardTitle">Pipeline</h2>
-          <p>Every role from discovery to offer. Lines show where each stage feeds the next.</p>
+          <p>Select a job, choose its new status and save to move it through this sample pipeline. Add an interview and preview its application or prep packet.</p>
         </div>
         <div class="seg-toggle" role="group" aria-label="View">
           <button type="button" data-view="2d" aria-pressed="false">2D</button>
@@ -171,14 +171,13 @@
     <!-- Interviews -->
     <section class="page" data-views="interviews" aria-labelledby="ivTitle" hidden>
       <div class="page-h">
-        <div><h1 id="ivTitle">Interviews</h1><p>Click any interview to open it in Google Calendar.</p></div>
+        <div><h1 id="ivTitle">Interviews</h1><p>Add or edit a sample interview, see it on the local calendar and open its prep packet. Linked jobs move to Interview. Your Gmail and Google Calendar are never accessed.</p></div>
         <div class="page-btns">
-          <a class="btn" href="https://calendar.google.com/calendar/r/week" target="_blank" rel="noopener noreferrer">Open Google Calendar</a>
-          <button type="button" class="btn primary" data-iv-add>Add interview</button>
+          <button type="button" class="btn primary" data-iv-add>Add sample interview</button>
         </div>
       </div>
       <div class="mini-kpis" id="ivKpis"></div>
-      <section class="panel cal-panel"><div class="panel-h"><div><h2>Next two weeks</h2><p>Interviews, follow-ups, deadlines and study time. Click anything to open it in Google Calendar.</p></div><div class="cal-legend" id="ivCalLegend"></div></div><div class="cal14" id="ivCal"></div></section>
+      <section class="panel cal-panel"><div class="panel-h"><div><h2>Next two weeks</h2><p>A simulated calendar with sample interviews, follow-ups and study time. Click an interview to inspect the event; no Google Calendar changes occur.</p></div><div class="cal-legend" id="ivCalLegend"></div></div><div class="cal14" id="ivCal"></div></section>
       <div class="two-col iv-cols">
         <div class="col-stack">
           <section class="panel"><div class="panel-h"><h2>Upcoming <span class="count" id="ivUpCount"></span></h2></div><div class="ivlist" id="ivUpcoming"></div></section>
@@ -191,7 +190,7 @@
     <!-- Inbox -->
     <section class="page" data-views="inbox" aria-labelledby="inTitle" hidden>
       <div class="page-h">
-        <div><h1 id="inTitle">Inbox</h1><p>New postings from the daily scan, sorted by Jev. Click a role to open the posting.</p></div>
+        <div><h1 id="inTitle">Inbox</h1><p>Sample postings from a recorded scan. Click a role to inspect its fit, then choose Move to review to add it to your pipeline.</p></div>
       </div>
       <div class="ptabs" id="inTabs" role="group" aria-label="Inbox section"></div>
       <section class="panel" aria-labelledby="liTitle" id="inSecMessages" hidden>
@@ -349,18 +348,19 @@
 
 <dialog class="dlg" id="ivDialog" aria-labelledby="ivDlgTitle">
   <form method="dialog" id="ivForm">
-    <h2 id="ivDlgTitle">Add interview</h2>
+    <h2 id="ivDlgTitle">Add sample interview</h2>
+    <p class="hint">Use fictional details. Saved only in this browser tab. A linked sample job moves to Interview; no invite or calendar event is sent.</p>
     <input type="hidden" name="ivid">
     <div class="form-grid">
-      <label>Company<input name="company" required list="ivCoList" autocomplete="off"></label>
-      <label>Tracker row<select name="row"></select></label>
-      <label>Role<input name="role" autocomplete="off"></label>
+      <label>Company<input name="company" required maxlength="80" list="ivCoList" autocomplete="off"></label>
+      <label>Sample job<select name="row"></select></label>
+      <label>Role<input name="role" maxlength="120" autocomplete="off"></label>
       <label>Round<select name="round"></select></label>
-      <label>Date<input name="date" type="date"></label>
-      <label>Time<input name="time" type="time"></label>
-      <label class="wide">Location<input name="location" placeholder="Google Meet, Teams, or an address" autocomplete="off"></label>
-      <label class="wide">Google Calendar link<input name="calendarUrl" type="url" placeholder="https://www.google.com/calendar/event?eid=…" autocomplete="off"></label>
-      <label class="wide">Meeting link<input name="meetUrl" type="url" placeholder="https://meet.google.com/…" autocomplete="off"></label>
+      <label>Date<input name="date" type="date" required></label>
+      <label>Time (Central)<input name="time" type="time"></label>
+      <label class="wide">Location<input name="location" maxlength="200" placeholder="Sample video interview" autocomplete="off"></label>
+      <input name="calendarUrl" type="hidden">
+      <input name="meetUrl" type="hidden">
       <label class="wide">Notes<textarea name="notes" rows="3" maxlength="1000"></textarea></label>
     </div>
     <datalist id="ivCoList"></datalist>
@@ -372,9 +372,14 @@
   </form>
 </dialog>
 
+<dialog class="dlg sample-document" id="sampleDocDialog" aria-labelledby="sampleDocTitle">
+  <div class="sample-document-head"><h2 id="sampleDocTitle">Sample document</h2><button type="button" class="btn" data-sample-close>Close preview</button></div>
+  <div id="sampleDocBody"></div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script type="module" src="mission.js?v=scoring-1"></script>
+<script type="module" src="mission.js?v=workflow-1"></script>
 </body>
 </html>
 

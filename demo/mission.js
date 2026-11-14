@@ -5,6 +5,7 @@
 
 import { build, scoreOf, isoLocal, today, urgentAlerts, followUps, mailActions, mailConfirmRows, systemStatus, calendarDays, profileView, profilesOf, PROFILES, platformRating, platformFilter, PLATFORM_FILTERS } from './mission-model.mjs?v=sample-2';
 import { renderWarRoom, initWarRoom, warRoomOn } from './warroom.js?v=interactive-1';
+import { renderSampleDocument } from './sample-documents.mjs?v=workflow-1';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => Number(n || 0).toLocaleString('en-US');
@@ -96,10 +97,49 @@ function toast(msg, ok = true, link = null) {
   toastTimer = setTimeout(() => { t.hidden = true; }, ok ? 3500 : 7000);
 }
 
-// Google Calendar: the event's own link when the interview log has it,
-// otherwise that day's page in the calendar.
-const dayUrl = (date) => { const d = parseIso(date); return d ? `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}` : 'https://calendar.google.com/calendar/r'; };
-const calUrl = (iv) => safeUrl(iv.calendarUrl) || dayUrl(iv.date);
+const sampleInterviewForRow = (num) => MALL.ivByRow.get(num) || MALL.ivs.findLast((iv) => iv.row != null && Number(iv.row) === num);
+
+function sampleDocButtons(num, ivId = '') {
+  return `<div class="sample-doc-actions">${[['resume', 'Preview résumé / CV'], ['cover', 'Preview cover letter'], ['prep', 'Preview prep packet']].map(([kind, label]) => `<button type="button" class="btn sm" data-sample-doc="${kind}" data-sample-row="${num ?? ''}" data-sample-iv="${esc(ivId)}">${label}</button>`).join('')}</div>`;
+}
+
+function openSampleDocument(num, kind, ivId) {
+  const iv = (DATA.interviews || []).find((x) => x.id === ivId) || sampleInterviewForRow(num);
+  const job = MALL.byNum.get(num) || (iv ? { company: iv.company, role: iv.role } : null);
+  if (!job) return toast('Choose a sample job first.', false);
+  const doc = renderSampleDocument(job, kind, iv);
+  $('#sampleDocTitle').textContent = doc.title;
+  $('#sampleDocBody').innerHTML = doc.html;
+  $('#sampleDocDialog').showModal();
+}
+
+function openSampleCalendar(id, date) {
+  const iv = (DATA.interviews || []).find((x) => x.id === id);
+  $('#sampleDocTitle').textContent = iv ? `${iv.company} · Sample calendar event` : `${date || 'Calendar'} · Sample day`;
+  $('#sampleDocBody').innerHTML = iv ? `<p>This event exists only in this demo tab. No Gmail message was read and no Google Calendar event was created.</p><dl><dt>Role</dt><dd>${esc(iv.role || 'Not specified')}</dd><dt>When</dt><dd>${esc(iv.date)}${iv.time ? ` at ${time12(iv.time)} CT` : ''}</dd><dt>Round</dt><dd>${esc(iv.round || 'Interview')}</dd><dt>Location</dt><dd>${esc(iv.location || 'Not specified')}</dd></dl>${iv.notes ? `<p>${esc(iv.notes)}</p>` : ''}<p>In the connected full workflow, Gmail monitoring helps log interview updates. Calendar coordination and an on-demand prep packet keep the next step organized.</p>${sampleDocButtons(iv.row, iv.id)}` : '<p>The calendar is a local simulation. Add a sample interview to see it appear here, then open its event and prep packet. No external calendar is connected.</p>';
+  $('#sampleDocDialog').showModal();
+}
+
+async function moveInboxToReview(key) {
+  const out = await post('/api/demo/track-inbox', { key });
+  if (!out.ok) return toast(out.error || 'Could not move this sample job.', false);
+  await refresh();
+  setProfile('all');
+  select(`row:${out.row}`);
+  showSelection();
+  toast('Sample job moved to review. Choose a new status to continue.');
+}
+
+function startSampleWorkflow() {
+  filt.q = ''; $('#q').value = ''; filt.stage = ''; filt.days = ''; $('#fTime').value = '';
+  setProfile('all');
+  const row = MALL.rows.find((x) => x.status === 'Evaluated') || MALL.rows[0];
+  if (!row) return;
+  select(`row:${row.num}`);
+  showSelection();
+  $('#selTitle').scrollIntoView({ block: 'center' });
+  toast('Move the sample job to Applied, then add an interview and preview its packet.');
+}
 
 // Packet mirror (the desktop folder): files and kinds for one tracker row.
 const packetOf = (num) => DATA.packets?.rows?.[num] || null;
@@ -384,7 +424,7 @@ function renderNext() {
   const items = [];
   for (const iv of M.upcoming.slice(0, 2)) {
     const soon = ['Today', 'Tomorrow'].includes(relDay(iv.date));
-    items.push({ href: calUrl(iv), tone: 'var(--acc)', title: `Interview: ${iv.company}`,
+    items.push({ interviewId: iv.id, tone: 'var(--acc)', title: `Interview: ${iv.company}`,
       sub: `${iv.round || 'Interview'} · ${(iv.role || '').split(' - ')[0]}`, chip: `${relDay(iv.date)} ${time12(iv.time)}`.trim(), cls: soon ? 'solid' : 'acc' });
   }
   const top = M.lanes.review.find((r) => r.sc >= 4);
@@ -397,8 +437,7 @@ function renderNext() {
   if (noFollow) items.push({ status: 'Applied', tone: 'var(--steel)', title: 'Plan follow-ups', sub: `${fmt(noFollow)} applied roles have no follow-up logged`, chip: fmt(noFollow), cls: 'ghost' });
   $('#next').innerHTML = items.map((x) => {
     const body = `<div><b>${esc(x.title)}</b><small title="${esc(x.sub)}">${esc(x.sub)}</small></div><span class="chip ${x.cls}">${esc(x.chip)}</span>`;
-    // Interviews open their Google Calendar event; the rest act inside the page.
-    if (x.href) return `<li style="--tone:${x.tone}"><a class="li-link" href="${esc(x.href)}" ${ext} title="Open in Google Calendar">${body}</a></li>`;
+    if (x.interviewId) return `<li style="--tone:${x.tone}"><button type="button" class="li-link sample-cal-button" data-sample-calendar="${esc(x.interviewId)}" title="View sample event">${body}</button></li>`;
     return `<li style="--tone:${x.tone}" tabindex="0" ${x.key ? `data-key="${esc(x.key)}"` : ''} ${x.status ? `data-status="${x.status}"` : ''} ${x.go ? `data-go="${x.go}"` : ''}>${body}</li>`;
   }).join('')
     || '<li><div><b>Nothing waiting on you</b><small>New work shows up here as it lands.</small></div></li>';
@@ -429,7 +468,8 @@ function renderAlerts() {
     const chip = a.kind === 'interview' ? `${relDay(a.date)} ${time12(a.iv.time)}`.trim() : a.kind === 'linkedin-error' ? 'Fix' : a.kind === 'linkedin' ? 'LinkedIn' : `Due ${relDay(a.date)}`;
     const body = `<div><b>${esc(a.title)}</b><small title="${esc(a.sub)}">${esc(a.sub)}</small></div><span class="chip ${a.level === 'now' ? 'warn' : 'acc'}">${esc(chip)}</span>`;
     const x = `<button type="button" class="al-x" data-al-dismiss="${esc(a.id)}" aria-label="Dismiss: ${esc(a.title)}">&times;</button>`;
-    const href = a.kind === 'interview' ? (safeUrl(a.iv.meetUrl) || calUrl(a.iv)) : a.kind.startsWith('linkedin') ? '#inbox/messages' : '';
+    if (a.kind === 'interview') return `<li style="--tone:${tone}"><button type="button" class="li-link sample-cal-button" data-sample-calendar="${esc(a.iv.id)}">${body}</button>${x}</li>`;
+    const href = a.kind.startsWith('linkedin') ? '#inbox/messages' : '';
     if (href) return `<li style="--tone:${tone}"><a class="li-link" href="${esc(href)}" ${href.startsWith('#') ? '' : ext}>${body}</a>${x}</li>`;
     return `<li style="--tone:${tone}" ${a.row != null ? `tabindex="0" data-key="row:${a.row}"` : ''}>${body}${x}</li>`;
   }).join('');
@@ -488,7 +528,8 @@ function renderSelInner() {
       <dt>Jev lane (snapshot)</dt><dd>${j ? esc(JEV_LANE[j.lane] || j.lane) : 'Not sorted'}</dd><dt>Snapshot confidence</dt><dd>${j ? Number(j.conf).toFixed(2) : '—'}</dd>
       <dt>Remote, US-eligible</dt><dd>${j && j.remote_us != null ? `${Math.round(j.remote_us * 100)}%` : '—'}</dd><dt>Source</dt><dd>${esc(hostOf(x.url))}</dd></dl>
       ${stackBlock(x)}
-      <div class="btns one">${posting}</div>`;
+      <p class="hint">Move this fictional posting into review, then change its pipeline stage, create sample documents and add an interview.</p>
+      <div class="btns one"><button type="button" class="btn primary" data-track-inbox="${esc(x.key)}">Move to review</button></div>`;
     return;
   }
   const iv = M.ivByRow.get(x.num);
@@ -501,19 +542,20 @@ function renderSelInner() {
     ${notes ? `<p>${esc(notes.length > 220 ? `${notes.slice(0, 217)}…` : notes)}</p>` : ''}
     <dl><dt>Row</dt><dd>#${x.num}</dd><dt>Evaluated</dt><dd>${shortDate(x.date)}</dd>
     ${x.status === 'Applied' || x.appliedOn ? `<dt>Applied</dt><dd>${shortDate(M.appliedAt(x))}</dd>` : ''}
-    ${iv ? `<dt>Interview</dt><dd><a href="${esc(calUrl(iv))}" ${ext}>${relDay(iv.date)} ${time12(iv.time)}</a></dd>` : ''}
+    ${iv ? `<dt>Interview</dt><dd><button type="button" class="btn sm" data-sample-calendar="${esc(iv.id)}">${relDay(iv.date)} ${time12(iv.time)}</button></dd>` : ''}
     <dt>Tailored CV</dt><dd>${/✅/.test(x.pdf || '') ? 'Yes' : 'No'}</dd><dt>Source</dt><dd>${esc(hostOf(x.url))}</dd></dl>
     ${stackBlock(x)}
-    ${pk ? `<div class="sel-files"><div class="sel-sub">Documents ${pk.staged ? '<span class="chip ghost">Not yet applied</span>' : ''}</div>${fileLinks(pk, { compact: true })}
-      <button type="button" class="linkish" data-open-folder="${esc(pk.rel)}">Open folder on desktop</button></div>` : ''}
-    ${packBlock(x.num, x.status === 'Interview' || !!iv)}
+    <h3>Job-specific application packet</h3>
+    <p class="hint">The full workflow tailors an ATS-formatted résumé/CV and cover letter to the job description. These previews use a fictional candidate and sample role brief.</p>
+    ${sampleDocButtons(x.num, iv?.id)}
     <form class="sel-status" data-row="${x.num}">
-      <div class="sel-sub">Update status</div>
+      <h3>Move this sample job</h3>
       <div class="sel-status-row"><select name="state" aria-label="New status">${states.map((s) => `<option value="${esc(s)}"${s === x.status ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select>
       <button type="submit" class="btn">Save</button></div>
       <input name="note" maxlength="200" placeholder="Note (optional)" aria-label="Status note" autocomplete="off">
     </form>
-    <div class="btns">${posting || '<span></span>'}${iv ? `<a class="btn" href="${esc(calUrl(iv))}" ${ext}>Google Calendar</a>` : pk ? '<a class="btn" href="#documents">All documents</a>' : '<span></span>'}</div>`;
+    <p class="hint">Status changes update the pipeline and activity in this tab. No application is sent.</p>
+    <div class="btns"><button type="button" class="btn primary" data-iv-add-row="${x.num}">Add sample interview</button>${iv ? `<button type="button" class="btn" data-sample-calendar="${esc(iv.id)}">View sample event</button>` : '<a class="btn" href="#documents">All sample documents</a>'}</div>`;
 }
 
 // Form fields are read through elements.namedItem: names like "id", "role" or
@@ -538,7 +580,7 @@ async function saveStatus(form) {
   savingRows.add(row); lockStatusForm();
   const out = await post('/api/status', { row, state, note: note || undefined });
   savingRows.delete(row); lockStatusForm();
-  toast(out.ok ? `Row #${row} set to ${state}.` : `Status not saved: ${out.error}`, out.ok);
+  toast(out.ok ? `Sample job #${row} moved to ${state}. No application was sent.` : `Status not saved: ${out.error}`, out.ok);
   if (!out.ok) return;
   if (r) r.status = state; // the model matches the tracker until the refresh lands
   // A refresh may have replaced the form during the save; settle whichever one
@@ -621,20 +663,18 @@ function ivCard(iv, past) {
   const meet = safeUrl(iv.meetUrl);
   const awaiting = past && r?.status === 'Interview';
   return `<article class="ivcard${past ? ' past' : ''}">
-    <a class="iv-main" href="${esc(calUrl(iv))}" ${ext} title="Open in Google Calendar">
+    <button type="button" class="iv-main sample-cal-button" data-sample-calendar="${esc(iv.id)}" aria-label="View sample event for ${esc(iv.company)}">
       <div class="iv-date"><span>${d ? WD[d.getDay()] : '—'}</span><b>${d ? d.getDate() : '?'}</b><span>${d ? MON[d.getMonth()] : ''}</span></div>
       <div class="iv-body"><b>${esc(iv.company)}</b><small>${esc((iv.role || r?.role || '').split(' - ')[0])}</small>
         <div class="chips"><span class="chip acc">${esc(iv.round || 'Interview')}</span>${iv.time ? `<span class="chip ghost">${time12(iv.time)} CT</span>` : ''}${iv.location ? `<span class="chip ghost" title="${esc(iv.location)}">${esc(iv.location.length > 48 ? `${iv.location.slice(0, 46)}…` : iv.location)}</span>` : ''}${awaiting ? '<span class="chip solid">Outcome?</span>' : past && r ? stageChip(r.status) : ''}</div>
       </div>
-      <span class="iv-open">Google Calendar ↗</span>
-    </a>
+      <span class="iv-open">View sample event</span>
+    </button>
     <div class="iv-acts">
-      ${meet && !past ? `<a class="btn primary sm" href="${esc(meet)}" ${ext}>Join meeting</a>` : ''}
-      ${r && packOf(r.num)?.ready ? `<a class="btn sm" href="/prep?row=${r.num}" ${ext}>Prep pack</a>` : r && !past ? `<button type="button" class="btn sm" data-prep-build="${r.num}"${packOf(r.num)?.state === 'running' ? ' disabled>Building prep pack…' : '>Build prep pack'}</button>` : ''}
-      ${prep ? `<a class="btn sm" href="/packet?f=${encodeURIComponent(prep)}" ${ext} data-open-file="${esc(prep)}">Prep doc</a>` : ''}
+      <button type="button" class="btn sm" data-sample-doc="prep" data-sample-row="${iv.row ?? ''}" data-sample-iv="${esc(iv.id)}">Preview prep packet</button>
       ${r ? `<button type="button" class="btn sm" data-key="row:${r.num}" data-go="applications">Role #${r.num}</button>` : ''}
       <button type="button" class="btn sm" data-iv-edit="${esc(iv.id)}">Edit</button>
-      <button type="button" class="btn sm ghost-btn" data-iv-del="${esc(iv.id)}">Delete</button>
+      <button type="button" class="btn sm ghost-btn" data-iv-del="${esc(iv.id)}">Remove sample interview</button>
     </div>
     ${iv.notes ? `<details><summary>Notes</summary><p>${esc(iv.notes)}</p></details>` : ''}
   </article>`;
@@ -673,18 +713,16 @@ function renderInterviews() {
   ].map(([k, l]) => `<span class="leg k-${k}"><i aria-hidden="true"></i>${l}</span>`).join('');
   $('#ivCal').innerHTML = cal.map((c, k) => {
     const d = parseIso(c.iso);
-    // Study blocks open that day: the recurring event's own link always points at its first occurrence.
-    const href = (x) => (x.kind === 'interview' ? calUrl(x.iv) : dayUrl(c.iso));
-    const ev = (x, i) => `<a class="cev k-${x.kind}${i >= SHOW ? ' extra' : ''}" href="${esc(href(x))}" ${ext} title="${esc(`${KIND_LABEL[x.kind]}: ${x.title}${x.sub ? ` · ${x.sub}` : ''}`)}">
-      <span>${x.kind === 'interview' ? `Interview${x.time ? ` · ${time12(x.time)}` : ''}` : x.time ? time12(x.time) : KIND_LABEL[x.kind]}</span><b>${esc(x.title)}</b></a>`;
+    const ev = (x, i) => `<button type="button" class="cev sample-cal-button k-${x.kind}${i >= SHOW ? ' extra' : ''}" data-sample-calendar="${esc(x.iv?.id || '')}" data-sample-date="${c.iso}" title="${esc(`${KIND_LABEL[x.kind]}: ${x.title}${x.sub ? ` · ${x.sub}` : ''}`)}">
+      <span>${x.kind === 'interview' ? `Interview${x.time ? ` · ${time12(x.time)}` : ''}` : x.time ? time12(x.time) : KIND_LABEL[x.kind]}</span><b>${esc(x.title)}</b></button>`;
     const more = c.items.length - SHOW;
     return `<div class="cday${k === 0 ? ' today' : ''}${c.items.some((x) => x.kind === 'interview') ? ' has' : ''}${d.getDay() === 0 || d.getDay() === 6 ? ' wkend' : ''}">
-      <a class="cday-h" href="${dayUrl(c.iso)}" ${ext} title="Open ${WD[d.getDay()]} ${MON[d.getMonth()]} ${d.getDate()} in Google Calendar"><span>${k === 0 ? 'Today' : WD[d.getDay()]}</span><b>${d.getDate()}</b></a>
+      <button type="button" class="cday-h sample-cal-button" data-sample-calendar="" data-sample-date="${c.iso}" title="View this sample calendar day"><span>${k === 0 ? 'Today' : WD[d.getDay()]}</span><b>${d.getDate()}</b></button>
       ${c.items.map(ev).join('')}${more > 0 ? `<button type="button" class="cmore" data-cal-more aria-expanded="false">+ ${fmt(more)} more</button>` : ''}</div>`;
   }).join('');
   $('#ivUpCount').textContent = fmt(up.length);
   $('#ivPastCount').textContent = fmt(past.length);
-  $('#ivUpcoming').innerHTML = up.map((i) => ivCard(i, false)).join('') || '<p class="empty-p">No interviews coming up. When one is booked, add it here or ask the agent to sync your calendar.</p>';
+  $('#ivUpcoming').innerHTML = up.map((i) => ivCard(i, false)).join('') || '<p class="empty-p">No interviews coming up. Add a sample interview to try the calendar and prep workflow.</p>';
   $('#ivPast').innerHTML = past.map((i) => ivCard(i, true)).join('') || '<p class="empty-p">No past interviews.</p>';
   const fu = followUps(DATA).filter((n) => matches({ company: n.who, role: n.what, notes: n.why }));
   $('#ivFuCount').textContent = fmt(fu.length);
@@ -702,7 +740,7 @@ function renderInterviews() {
 let ivBaseline = null; // the interview as it was when the edit dialog opened
 let ivSaving = false;
 
-function openIvDialog(iv) {
+function openIvDialog(iv, rowNum) {
   if (!DATA) return;
   if (ivSaving) { toast('Still saving the last interview. Try again in a moment.', false); return; }
   ivBaseline = iv ? { ...iv } : null;
@@ -711,11 +749,11 @@ function openIvDialog(iv) {
   const F = (n) => fieldOf(f, n);
   f.reset();
   $('#ivErr').textContent = '';
-  $('#ivDlgTitle').textContent = iv ? 'Edit interview' : 'Add interview';
-  F('round').innerHTML = (DATA.interviewRounds || ['1st Interview']).map((r) => `<option>${esc(r)}</option>`).join('');
+  $('#ivDlgTitle').textContent = iv ? 'Edit sample interview' : 'Add sample interview';
+  F('round').innerHTML = [...new Set([...(DATA.interviewRounds || ['1st Interview']), ...(iv?.round ? [iv.round] : [])])].map((r) => `<option>${esc(r)}</option>`).join('');
   // Interviews are global, so the row picker ignores the Career/Stack switch.
   const allRows = MALL.rows;
-  const rows = allRows.filter((r) => ['Applied', 'Responded', 'Interview', 'Offer'].includes(r.status) || r.num === Number(iv?.row));
+  const rows = allRows;
   F('row').innerHTML = `<option value="">None</option>${rows.map((r) => `<option value="${r.num}">#${r.num} ${esc(r.company)}: ${esc(r.role)}</option>`).join('')}`;
   $('#ivCoList').innerHTML = [...new Set(allRows.map((r) => r.company))].map((c) => `<option value="${esc(c)}">`).join('');
   F('ivid').value = iv?.id || '';
@@ -723,7 +761,14 @@ function openIvDialog(iv) {
     for (const k of ['company', 'role', 'date', 'time', 'location', 'calendarUrl', 'meetUrl', 'notes']) F(k).value = iv[k] || '';
     F('round').value = iv.round || F('round').value;
     F('row').value = iv.row != null ? String(iv.row) : '';
+  } else {
+    F('date').value = isoLocal(addDays(new Date(), 1));
+    F('time').value = '10:00';
+    F('location').value = 'Sample video interview';
+    const row = MALL.byNum.get(rowNum);
+    if (row) { F('row').value = String(row.num); F('company').value = row.company; F('role').value = row.role; }
   }
+  F('calendarUrl').value = ''; F('meetUrl').value = '';
   dlg.showModal();
 }
 
@@ -753,15 +798,15 @@ async function saveIvDialog(e) {
   ivSaving = false; btn.disabled = false;
   if (!r.ok) { $('#ivErr').textContent = r.error; return; }
   $('#ivDialog').close();
-  toast(id ? 'Interview updated.' : 'Interview added.');
-  refresh();
+  toast(id ? 'Sample interview updated in this tab.' : 'Sample interview added to the local calendar. Its prep preview is ready.');
+  await refresh();
+  if (!id) location.hash = 'interviews';
 }
 
 async function deleteIv(id) {
   const iv = M.ivs.find((i) => i.id === id) || (DATA.interviews || []).find((i) => i.id === id);
-  if (!confirm(`Delete the ${iv?.company || ''} interview on ${shortDate(iv?.date)} from the dashboard? Your Google Calendar is not changed.`)) return;
   const r = await post('/api/interviews', { action: 'delete', event: { id } });
-  toast(r.ok ? 'Interview removed from the dashboard.' : `Not deleted: ${r.error}`, r.ok);
+  toast(r.ok ? 'Sample interview removed. Pipeline status is unchanged; Reset demo restores the original examples.' : `Not removed: ${r.error}`, r.ok);
   if (r.ok) refresh();
 }
 
@@ -822,11 +867,11 @@ function renderInboxPage() {
   $('#inSecOnsite').hidden = inboxTab !== 'onsite';
   const pct = (v) => (v == null ? '—' : `${Math.round(v * 100)}%`);
   $('#inRows').innerHTML = list.slice(0, inbox.limit).map((x) => `<tr data-inbox-key="${esc(x.key)}" class="${inboxOpen === x.key ? 'open' : ''}" title="Click for the sample fit details">
-    <td class="co" title="${esc(x.company)}">${x.url ? `<a href="${esc(safeUrl(x.url))}" ${ext}>${esc(x.company)}</a>` : esc(x.company)}</td>
-    <td title="${esc(x.role)}">${x.url ? `<a href="${esc(safeUrl(x.url))}" ${ext}>${esc(x.role)}</a>` : esc(x.role)}${stackChip(x)}</td>
+    <td class="co" title="${esc(x.company)}">${esc(x.company)}</td>
+    <td title="${esc(x.role)}"><button type="button" class="btn sm" aria-expanded="${inboxOpen === x.key}">${esc(x.role)}</button>${stackChip(x)}</td>
     <td title="${esc(x.loc)}">${esc(x.loc || '—')}</td>
     <td>${x.jev ? `<span class="chip ${x.jev.lane === 'off_target' ? 'ghost' : 'acc'}">${esc(JEV_LANE[x.jev.lane] || x.jev.lane)}</span>` : '<span class="chip ghost">Not sorted</span>'}</td>
-    <td>${x.jev ? Number(x.jev.conf).toFixed(2) : '—'}</td><td>${pct(x.jev?.remote_us)}</td><td>${stackCell(x)}</td><td>${shortDate(x.posted)}</td></tr>${inboxOpen === x.key ? `<tr class="stk-row"><td colspan="8">${stackBlock(x) || '<span class="empty-p">No sample fit data for this posting yet.</span>'}</td></tr>` : ''}`).join('')
+    <td>${x.jev ? Number(x.jev.conf).toFixed(2) : '—'}</td><td>${pct(x.jev?.remote_us)}</td><td>${stackCell(x)}</td><td>${shortDate(x.posted)}</td></tr>${inboxOpen === x.key ? `<tr class="stk-row"><td colspan="8">${stackBlock(x) || '<span class="empty-p">No sample fit data for this posting yet.</span>'}<div class="sample-doc-actions"><button type="button" class="btn primary" data-track-inbox="${esc(x.key)}">Move to review</button></div><p class="hint">Adds this sample posting to your pipeline in this tab.</p></td></tr>` : ''}`).join('')
     || '<tr><td class="empty" colspan="8">No postings match. Turn on more lanes or clear the search.</td></tr>';
   const more = $('#inMore');
   more.hidden = list.length <= inbox.limit;
@@ -909,25 +954,21 @@ function renderOnsite() {
 // ---------------------------------------------------------------- documents page
 
 function renderDocs() {
-  const P = DATA.packets;
-  if (!P) { $('#docGrid').innerHTML = '<p class="empty-p">No packet folder is set (packet_mirror.dir in config/profile.yml).</p>'; return; }
-  $('#docPath').innerHTML = `Pulled from your desktop folder: <code>${esc(P.dir)}</code>. Applied roles sit in their company folder; roles not applied to yet sit under <code>${esc(P.staging)}</code>.`;
-  const entries = Object.entries(P.rows).map(([num, pk]) => ({ num: Number(num), pk, r: M.byNum.get(Number(num)) })).filter((e) => e.r);
-  const n = { all: entries.length, applied: entries.filter((e) => !e.pk.staged).length, staged: entries.filter((e) => e.pk.staged).length, prep: entries.filter((e) => e.pk.files.some((f) => /^interview-prep-/.test(f))).length };
-  const defs = [['all', 'All'], ['applied', 'Applied'], ['staged', 'Not yet applied'], ['prep', 'Has interview prep']];
+  $('#docPath').textContent = 'Preview a job-specific ATS résumé/CV, cover letter and interview prep packet for a fictional candidate. The full connected system uses the actual job description and approved candidate facts; this demo uses labeled templates and sample role briefs.';
+  const entries = M.rows.map((r) => ({ num: r.num, r, iv: sampleInterviewForRow(r.num), applied: ['Applied', 'Responded', 'Assessment', 'Interview', 'Offer', 'Hired', 'Rejected'].includes(r.status) }));
+  const n = { all: entries.length, applied: entries.filter((e) => e.applied).length, staged: entries.filter((e) => !e.applied).length, prep: entries.filter((e) => e.iv).length };
+  const defs = [['all', 'All sample jobs'], ['applied', 'Applied'], ['staged', 'Not yet applied'], ['prep', 'Interview linked']];
   $('#docFilter').innerHTML = defs.map(([k, l]) => `<button type="button" class="fchip" data-docshow="${k}" aria-pressed="${docs.show === k}">${l} <span>${fmt(n[k])}</span></button>`).join('');
-  let list = entries.filter((e) => (docs.show === 'all' || (docs.show === 'applied' && !e.pk.staged) || (docs.show === 'staged' && e.pk.staged)
-    || (docs.show === 'prep' && e.pk.files.some((f) => /^interview-prep-/.test(f)))) && matches(e.r));
+  let list = entries.filter((e) => (docs.show === 'all' || (docs.show === 'applied' && e.applied) || (docs.show === 'staged' && !e.applied)
+    || (docs.show === 'prep' && e.iv)) && matches(e.r));
   list.sort(docs.sort === 'company' ? (a, b) => a.r.company.localeCompare(b.r.company) || a.num - b.num
     : (a, b) => M.activityDate(b.r).localeCompare(M.activityDate(a.r)) || b.num - a.num);
   $('#docCount').textContent = fmt(list.length);
-  $('#docGrid').innerHTML = list.slice(0, docs.limit).map(({ num, pk, r }) => `<article class="doc-card">
+  $('#docGrid').innerHTML = list.slice(0, docs.limit).map(({ num, r, iv }) => `<article class="doc-card">
       <div class="doc-h"><div><b>${esc(r.company)}</b><small>${esc(r.role)}</small></div>${stageChip(r.status)}</div>
-      <div class="doc-meta">#${num} · ${shortDate(M.activityDate(r))} · <span title="${esc(pk.rel)}">${pk.staged ? 'Not Yet Applied / ' : ''}${esc(pk.folder)}</span></div>
-      <div class="files">${fileLinks(pk, { compact: true })}</div>
-      <div class="doc-acts"><button type="button" class="btn sm" data-open-folder="${esc(pk.rel)}">Open folder</button>
-        <button type="button" class="btn sm" data-key="row:${num}" data-go="applications">Role details</button>
-        ${r.url ? `<a class="btn sm" href="${esc(safeUrl(r.url))}" ${ext}>Posting</a>` : ''}</div>
+      <div class="doc-meta">#${num} · Fictional candidate · ${iv ? 'Interview linked' : 'Application packet preview'}</div>
+      ${sampleDocButtons(num, iv?.id)}
+      <div class="doc-acts"><button type="button" class="btn sm" data-key="row:${num}" data-go="applications">Role details</button><button type="button" class="btn sm" data-iv-add-row="${num}">Add sample interview</button></div>
     </article>`).join('') || '<p class="empty-p">No documents match. Clear the search or pick another filter.</p>';
   const more = $('#docMore');
   more.hidden = list.length <= docs.limit;
@@ -985,7 +1026,7 @@ function renderTargetingInner() {
         ${x.slug === PRESETS.active ? '<span class="chip acc">Active</span>' : `<button type="button" class="btn sm" data-preset-switch="${esc(x.slug)}">Switch to this</button>`}</li>`).join('')}</ul>
       <form class="inline-form" id="tgSave"><input name="pname" placeholder="Name for a new preset" maxlength="60" required aria-label="New preset name" autocomplete="off"><button type="submit" class="btn">Save current as preset</button></form>
       <button type="button" class="linkish" id="tgReset">Reset parameters to saved preset</button>
-      <p class="hint">Apply your parameters, then save them as a named preset before switching. Sample changes stay in this browser tab; they do not change anyone else's data.</p>
+      <p class="hint">Apply your parameters, then save them as a named preset before switching. Sample changes stay in this browser tab. Resetting this demo also restores the original sample jobs and interviews.</p>
       <button type="button" class="linkish" id="tgSessionReset">Reset this demo session</button>
     </section>
   </div>
@@ -1859,6 +1900,17 @@ document.addEventListener('click', (e) => {
   const more = e.target.closest('button.lane-more');
   if (more) return filterStage(more.dataset.status);
   if (!DATA) return; // everything below needs the data loaded
+  if (e.target.closest('[data-demo-start]')) return startSampleWorkflow();
+  if (e.target.closest('[data-demo-reset]')) return presetAction('/api/presets/session-reset', {}, 'Demo reset: original sample jobs, interviews, parameters and presets restored.');
+  const sampleDoc = e.target.closest('[data-sample-doc]');
+  if (sampleDoc) return openSampleDocument(Number(sampleDoc.dataset.sampleRow), sampleDoc.dataset.sampleDoc, sampleDoc.dataset.sampleIv);
+  if (e.target.closest('[data-sample-close]')) return $('#sampleDocDialog').close();
+  const sampleCalendar = e.target.closest('[data-sample-calendar]');
+  if (sampleCalendar) return openSampleCalendar(sampleCalendar.dataset.sampleCalendar, sampleCalendar.dataset.sampleDate);
+  const trackInbox = e.target.closest('[data-track-inbox]');
+  if (trackInbox) return moveInboxToReview(trackInbox.dataset.trackInbox);
+  const addRowInterview = e.target.closest('[data-iv-add-row]');
+  if (addRowInterview) return openIvDialog(null, Number(addRowInterview.dataset.ivAddRow));
   const adx = e.target.closest('[data-al-dismiss]');
   if (adx) return dismissAlert(adx.dataset.alDismiss);
   const ppb = e.target.closest('[data-prep-build]');
@@ -1926,7 +1978,7 @@ document.addEventListener('click', (e) => {
     presetAction('/api/presets/reset', {}, 'Sample parameters reset to the saved preset.');
     return;
   }
-  if (e.target.closest('#tgSessionReset')) return presetAction('/api/presets/session-reset', {}, 'Demo session reset to the original examples.');
+  if (e.target.closest('#tgSessionReset')) return presetAction('/api/presets/session-reset', {}, 'Demo reset: original sample jobs, interviews, parameters and presets restored.');
   if (e.target.closest('#stRefresh')) return refresh().then((ok) => ok && toast('Data refreshed.'));
   const item = e.target.closest('[data-key]');
   if (item && item.closest('#lanes, #rows, #next, #alRows, .ivlist, .doc-grid, #tgScoreExamples')) {
@@ -1950,6 +2002,10 @@ document.addEventListener('submit', (e) => {
   if (e.target.id === 'tgSave') { e.preventDefault(); const name = fieldOf(e.target, 'pname').value.trim(); if (name) presetAction('/api/presets/save', { name }, `Saved preset "${name}".`); }
 });
 $('#ivForm').addEventListener('submit', saveIvDialog);
+fieldOf($('#ivForm'), 'row').addEventListener('change', (e) => {
+  const row = MALL.byNum.get(Number(e.target.value));
+  if (row) { fieldOf($('#ivForm'), 'company').value = row.company; fieldOf($('#ivForm'), 'role').value = row.role; }
+});
 $('#rows').addEventListener('keydown', (e) => {
   const tr = e.target.closest('tr[data-key]');
   if (!tr || (e.key !== 'Enter' && e.key !== ' ')) return;

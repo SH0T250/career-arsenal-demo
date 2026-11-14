@@ -452,6 +452,21 @@ dl.kv dd { margin: 0; text-align: right; }
 /* dialog + toast */
 .dlg { background: var(--panel); color: var(--ink); border: 1px solid var(--line-2); border-radius: 14px; padding: 20px; width: min(620px, calc(100vw - 32px)); box-shadow: 0 30px 80px -20px #000; }
 .dlg::backdrop { background: rgba(5, 7, 10, .65); }
+.dlg { max-height: calc(100dvh - 32px); overflow-y: auto; }
+.sample-document { width: min(820px, calc(100vw - 32px)); }
+.sample-document-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; position: sticky; top: -20px; padding: 20px 0 12px; margin-top: -20px; background: var(--panel); z-index: 1; }
+.sample-document-head .btn { flex: none; }
+#sampleDocBody { font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
+#sampleDocBody h2, #sampleDocBody h3 { margin: 28px 0 10px; line-height: 1.35; }
+#sampleDocBody h3 { font-size: 17px; }
+#sampleDocBody li { margin: 6px 0; }
+#sampleDocBody dt { font-weight: 600; }
+#sampleDocBody dd { margin: 0 0 12px; }
+.sample-doc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.sample-doc-actions .btn { min-height: 38px; }
+.sample-cal-button { font: inherit; color: inherit; text-align: left; width: 100%; cursor: pointer; }
+.iv-main.sample-cal-button, .cday-h.sample-cal-button { background: transparent; border: 0; }
+.sample-cal-button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 .dlg h2 { margin: 0 0 14px; font: 650 19px var(--display); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .form-grid label { display: grid; gap: 5px; font-size: 12.5px; color: var(--muted); }
