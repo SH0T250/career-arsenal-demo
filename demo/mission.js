@@ -109,8 +109,54 @@ function openSampleDocument(num, kind, ivId) {
   if (!job) return toast('Choose a sample job first.', false);
   const doc = renderSampleDocument(job, kind, iv);
   $('#sampleDocTitle').textContent = doc.title;
-  $('#sampleDocBody').innerHTML = doc.html;
+  const fromInvite = kind === 'prep' && DATA.sampleInvite?.prepReady && iv?.id === DATA.sampleInvite.interviewId;
+  $('#sampleDocBody').innerHTML = (fromInvite ? '<p class="invite-generated"><strong>Generated automatically from the accepted sample invite.</strong> The linked interview is on the demo calendar. This packet uses local fictional templates; no live research or AI request ran.</p>' : '') + doc.html;
   $('#sampleDocDialog').showModal();
+}
+
+function sampleInviteOutcome(invite) {
+  const ready = invite.accepted && invite.calendarPresent;
+  return `<ol class="invite-steps" aria-label="Sample invite workflow">
+    <li><strong>${invite.accepted ? 'Invite accepted' : 'Accept the invite'}</strong><span>${invite.accepted ? 'Recorded in this demo tab.' : 'One click starts the sample workflow.'}</span></li>
+    <li><strong>${ready ? 'Calendar event added' : invite.accepted ? 'Calendar event removed' : 'Add the calendar event'}</strong><span>${ready ? 'Linked to the sample job.' : invite.accepted ? 'Use Reset demo to replay the invite.' : 'The job moves to Interview.'}</span></li>
+    <li><strong>${invite.prepReady ? 'Prep packet ready' : 'Prepare the interview packet'}</strong><span>${invite.prepReady ? 'Generated automatically from fictional templates.' : 'Company brief, practice answers and an interview plan.'}</span></li>
+  </ol>${ready ? `<div class="sample-doc-actions"><button type="button" class="btn" data-sample-calendar="${esc(invite.interviewId)}">View sample calendar event</button><button type="button" class="btn primary" data-sample-doc="prep" data-sample-row="${invite.row}" data-sample-iv="${esc(invite.interviewId)}">Open generated prep packet</button></div>` : ''}`;
+}
+
+function renderSampleInvite() {
+  const invite = DATA.sampleInvite;
+  const host = $('#sampleInvite');
+  host.hidden = !invite;
+  if (!invite) return;
+  host.innerHTML = `<div class="sample-invite-heading"><h2 id="sampleInviteTitle">Sample Gmail interview invite</h2><span class="chip ${invite.accepted ? 'ok' : 'acc'}">${invite.accepted ? 'Accepted in demo' : 'Awaiting your response'}</span></div>
+    <p class="hint">A fictional email for you to try. Accepting it changes only this demo; no email or calendar invitation is sent.</p>
+    <div class="sample-invite-layout"><div><h3>${esc(invite.subject)}</h3><dl class="sample-invite-meta"><dt>From</dt><dd>${esc(invite.from)}</dd><dt>To</dt><dd>${esc(invite.to)}</dd><dt>When</dt><dd>${esc(invite.date)} · ${time12(invite.time)} Central</dd><dt>Where</dt><dd>${esc(invite.location)}</dd></dl><p class="sample-invite-body">${esc(invite.body)}</p>
+    ${invite.accepted ? '<p class="hint">Accepted. You can review the event and packet, or use Reset demo to try again.</p>' : `<button type="button" class="btn primary" data-accept-invite="${esc(invite.id)}">Accept sample invite</button>`}</div>
+    <div class="sample-invite-outcome"><h3>${invite.accepted ? 'Your sample workflow' : 'What happens when you accept'}</h3>${sampleInviteOutcome(invite)}</div></div>`;
+}
+
+let acceptingInvite = false;
+async function acceptSampleInvite(id, button) {
+  if (acceptingInvite) return;
+  acceptingInvite = true;
+  button.disabled = true;
+  button.textContent = 'Accepting sample invite…';
+  try {
+    const out = await post('/api/demo/accept-invite', { id });
+    if (!out.ok) return toast(out.error || 'Could not accept the sample invite. Try again.', false);
+    if (!await refresh()) return;
+    if (!out.invite.calendarPresent) return toast('This sample interview was removed. Use Reset demo to replay the invite.', false);
+    filt.q = ''; $('#q').value = ''; setProfile('all');
+    location.hash = 'interviews';
+    renderInterviews();
+    openSampleDocument(out.row, 'prep', out.invite.interviewId);
+    toast('Sample invite accepted. Calendar event added and prep packet generated.');
+  } catch (error) {
+    toast(`Could not finish the sample workflow: ${error.message}. Try again or reset the demo.`, false);
+  } finally {
+    acceptingInvite = false;
+    renderSampleInvite();
+  }
 }
 
 function openSampleCalendar(id, date) {
@@ -681,6 +727,9 @@ function ivCard(iv, past) {
 }
 
 function renderInterviews() {
+  const invite = DATA.sampleInvite;
+  $('#ivInviteResult').hidden = !invite?.accepted;
+  $('#ivInviteResult').innerHTML = invite?.accepted ? `<h2>From invite to interview prep</h2>${sampleInviteOutcome(invite)}<p class="hint">Sample Gmail and Calendar workflow · all changes stay in this tab.</p>` : '';
   const t = today();
   const up = M.upcoming.filter(matches);
   const upIds = new Set(M.upcoming.map((i) => i.id));
@@ -1694,10 +1743,9 @@ function mailTable(head, rows, empty) {
 }
 
 function renderMail() {
+  renderSampleInvite();
   const m = DATA.mail;
-  $('#mlSub').textContent = m
-    ? `Last Gmail sweep ${shortDate(m.scannedAt)}. This is a read-only copy; ask the agent to sweep again for new mail.`
-    : 'No Gmail sweep logged yet. Ask the agent to run a mail sweep.';
+  $('#mlSub').textContent = 'Accept the fictional Gmail invite below to create its sample calendar event and automatically open the prep packet. The remaining mail log is a recorded sample.';
   const t = today();
   const action = mailActions(m, t);
   const replies = [...(m?.replies || [])].sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
@@ -1900,6 +1948,8 @@ document.addEventListener('click', (e) => {
   const more = e.target.closest('button.lane-more');
   if (more) return filterStage(more.dataset.status);
   if (!DATA) return; // everything below needs the data loaded
+  const acceptInvite = e.target.closest('[data-accept-invite]');
+  if (acceptInvite) return acceptSampleInvite(acceptInvite.dataset.acceptInvite, acceptInvite);
   if (e.target.closest('[data-demo-start]')) return startSampleWorkflow();
   if (e.target.closest('[data-demo-reset]')) return presetAction('/api/presets/session-reset', {}, 'Demo reset: original sample jobs, interviews, parameters and presets restored.');
   const sampleDoc = e.target.closest('[data-sample-doc]');

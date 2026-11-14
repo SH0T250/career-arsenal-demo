@@ -34,7 +34,9 @@
   const fieldsOnly = (value, fields) => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every((key) => fields.includes(key));
   const optionalText = (s, max) => typeof s === 'string' && s.length <= max;
   const validDate = (s) => typeof s === 'string' && /^20\d{2}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T12:00:00Z`)) && new Date(`${s}T12:00:00Z`).toISOString().slice(0, 10) === s;
-  const localDate = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const localDate = (days = 0) => { const d = new Date(); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const inviteId = 'sample-gmail-bluecrest';
+  const inviteInterviewId = 'demo-iv-gmail-bluecrest';
   const validId = (s) => typeof s === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(s);
   const interviewFields = ['id', 'company', 'role', 'row', 'round', 'date', 'time', 'notes', 'calendarUrl', 'meetUrl', 'location'];
   const rowsFor = (w) => [...data.tracker, ...w.tracked.map((entry) => {
@@ -56,13 +58,15 @@
   async function sampleWorkflow() {
     await sourceData();
     if (workflow) return workflow;
-    workflow = { version: 1, tracked: [], moves: [], interviews: structuredClone(data.interviews) };
+    workflow = { version: 1, tracked: [], moves: [], interviews: structuredClone(data.interviews), invite: { date: localDate(1), accepted: false } };
     try {
       const raw = sessionStorage.getItem(workflowKey);
-      if (!raw || raw.length > 1000000) return workflow;
+      if (!raw) { persistWorkflow(); return workflow; }
+      if (raw.length > 1000000) return workflow;
       const saved = JSON.parse(raw);
-      if (!fieldsOnly(saved, ['version', 'tracked', 'moves', 'interviews']) || saved.version !== 1 || !Array.isArray(saved.tracked) || saved.tracked.length > 100
+      if (!fieldsOnly(saved, ['version', 'tracked', 'moves', 'interviews', 'invite']) || saved.version !== 1 || !Array.isArray(saved.tracked) || saved.tracked.length > 100
         || !Array.isArray(saved.moves) || saved.moves.length > 1000 || !Array.isArray(saved.interviews) || saved.interviews.length > 100) return workflow;
+      if (saved.invite !== undefined && (!fieldsOnly(saved.invite, ['date', 'accepted']) || !validDate(saved.invite.date) || typeof saved.invite.accepted !== 'boolean')) return workflow;
       const inboxKeys = new Set(data.pipeline.pending.map((p) => inboxJob(p).key));
       const seedMax = Math.max(...data.tracker.map((r) => r.num));
       if (!saved.tracked.every((r) => fieldsOnly(r, ['key', 'num', 'date']) && inboxKeys.has(r.key) && Number.isInteger(r.num) && r.num > seedMax && r.num <= seedMax + 100 && validDate(r.date))
@@ -76,11 +80,23 @@
       }
       const interviews = saved.interviews.map((iv) => cleanInterview(iv, rows));
       if (interviews.some((iv) => !iv) || new Set(interviews.map((iv) => iv.id)).size !== interviews.length) return workflow;
-      workflow = { version: 1, tracked: saved.tracked.map(({ key, num, date }) => ({ key, num, date })), moves: saved.moves.map(({ num, date, from, to, source, note }) => ({ num, date, from, to, source, note })), interviews };
+      if (!saved.invite?.accepted && interviews.some((iv) => iv.id === inviteInterviewId)) return workflow;
+      workflow = { version: 1, tracked: saved.tracked.map(({ key, num, date }) => ({ key, num, date })), moves: saved.moves.map(({ num, date, from, to, source, note }) => ({ num, date, from, to, source, note })), interviews,
+        invite: saved.invite ? { date: saved.invite.date, accepted: saved.invite.accepted } : workflow.invite };
     } catch { /* invalid or unavailable storage starts an isolated sample session */ }
+    persistWorkflow();
     return workflow;
   }
   const persistWorkflow = () => { try { sessionStorage.setItem(workflowKey, JSON.stringify(workflow)); } catch { /* edits still work in this page when browser storage is unavailable */ } };
+  function sampleInvite(w) {
+    const job = data.tracker.find((r) => r.num === 676);
+    const calendarPresent = w.invite.accepted && w.interviews.some((iv) => iv.id === inviteInterviewId);
+    return { id: inviteId, from: 'Avery Chen <avery.chen@example.com>', to: 'Jordan Taylor <jordan.taylor@example.com>',
+      subject: `Interview invitation — ${job.role} at ${job.company}`, company: job.company, role: job.role, row: job.num,
+      body: `Hi Jordan, we would like to meet with you about the ${job.role} role at ${job.company}. Please accept this sample invite to confirm the time below. We will discuss your project coordination experience and answer your questions. — Avery, fictional hiring team`,
+      date: w.invite.date, time: '10:00', round: 'Screen', location: 'Sample video interview',
+      accepted: w.invite.accepted, interviewId: w.invite.accepted ? inviteInterviewId : null, calendarPresent, prepReady: calendarPresent };
+  }
   function applyWorkflow(result, w) {
     result.tracker = rowsFor(w).map((r) => ({ ...r }));
     for (const move of w.moves) {
@@ -91,6 +107,7 @@
     }
     result.statusLog.push(...structuredClone(w.moves));
     result.interviews = structuredClone(w.interviews);
+    result.sampleInvite = sampleInvite(w);
     const tracked = new Set(w.tracked.map((r) => r.key));
     result.pipeline.pending = result.pipeline.pending.filter((p) => !tracked.has(inboxJob(p).key));
     const changed = w.moves.length > 0 || w.tracked.length > 0;
@@ -118,8 +135,22 @@
     const w = await sampleWorkflow();
     const rows = rowsFor(w);
     let result = { ok: true };
+    if (route === '/api/demo/accept-invite') {
+      if (!fieldsOnly(body, ['id']) || body.id !== inviteId) return { ok: false, error: 'Choose the fictional Gmail invite shown in this demo.' };
+      if (w.invite.accepted) return { ok: true, alreadyAccepted: true, event: structuredClone(w.interviews.find((iv) => iv.id === inviteInterviewId) || null), row: 676, invite: sampleInvite(w) };
+    }
     if (w.moves.length >= 1000) return { ok: false, error: 'This sample session reached 1,000 changes. Reset the demo to start again.' };
-    if (route === '/api/status') {
+    if (route === '/api/demo/accept-invite') {
+      if (w.interviews.length >= 100) return { ok: false, error: 'This demo supports 100 interviews. Reset the demo to start again.' };
+      const invite = sampleInvite(w);
+      const event = cleanInterview({ id: inviteInterviewId, company: invite.company, role: invite.role, row: invite.row, round: invite.round, date: invite.date,
+        time: invite.time, location: invite.location, notes: 'Accepted from the fictional Gmail invite. Sample prep packet generated automatically.', calendarUrl: '', meetUrl: '' }, rows);
+      if (!event) return { ok: false, error: 'The sample invite could not be prepared. Reset the demo and try again.' };
+      w.interviews.push(event);
+      moveRow(w, event.row, 'Interview');
+      w.invite.accepted = true;
+      result = { ok: true, alreadyAccepted: false, event: structuredClone(event), row: event.row, invite: sampleInvite(w) };
+    } else if (route === '/api/status') {
       if (!fieldsOnly(body, ['row', 'state', 'note']) || !Number.isInteger(body.row) || !rows.some((r) => r.num === body.row) || !data.states.includes(body.state)
         || !(body.note === undefined || optionalText(body.note, 200))) return { ok: false, error: 'Choose a sample job, a listed stage and a note up to 200 characters.' };
       moveRow(w, body.row, body.state, body.note?.trim() || '');
@@ -265,11 +296,11 @@
     const u = target.origin === base.origin && target.pathname.startsWith('/api/') ? target.pathname + target.search : null;
     if (!u) return reading ? realFetch(url, init) : json({ ok: false, error: 'external writes are disabled in this sample demo' });
     if (!reading) {
-      if (method !== 'POST' || !['/api/status', '/api/interviews', '/api/demo/track-inbox', '/api/presets/params', '/api/presets/save', '/api/presets/switch', '/api/presets/reset', '/api/presets/session-reset'].includes(u)) return json({ ok: false, error: 'only sample workflow edits are available; no live action was taken' });
+      if (method !== 'POST' || !['/api/status', '/api/interviews', '/api/demo/track-inbox', '/api/demo/accept-invite', '/api/presets/params', '/api/presets/save', '/api/presets/switch', '/api/presets/reset', '/api/presets/session-reset'].includes(u)) return json({ ok: false, error: 'only sample workflow edits are available; no live action was taken' });
       let body;
       try { body = JSON.parse(init?.body ?? await url.clone().text()); } catch { return json({ ok: false, error: 'invalid sample parameters' }, 400); }
       if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ ok: false, error: 'invalid sample parameters' }, 400);
-      if (['/api/status', '/api/interviews', '/api/demo/track-inbox'].includes(u)) {
+      if (['/api/status', '/api/interviews', '/api/demo/track-inbox', '/api/demo/accept-invite'].includes(u)) {
         const result = await workflowAction(u, body);
         return json(result, result.ok ? 200 : 400);
       }

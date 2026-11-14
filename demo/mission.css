@@ -467,6 +467,22 @@ dl.kv dd { margin: 0; text-align: right; }
 .sample-cal-button { font: inherit; color: inherit; text-align: left; width: 100%; cursor: pointer; }
 .iv-main.sample-cal-button, .cday-h.sample-cal-button { background: transparent; border: 0; }
 .sample-cal-button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.sample-invite, .sample-invite-result { padding: 24px; }
+.sample-invite-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sample-invite h2, .sample-invite-result h2 { margin: 0; font-size: 21px; }
+.sample-invite h3 { margin: 8px 0 16px; font-size: 17px; line-height: 1.4; }
+.sample-invite-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; margin-top: 24px; }
+.sample-invite-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14px; }
+.sample-invite-meta dt { color: var(--muted); }
+.sample-invite-meta dd { margin: 0; overflow-wrap: anywhere; }
+.sample-invite-body { white-space: pre-line; font-size: 15px; line-height: 1.65; max-width: 68ch; margin: 20px 0; }
+.invite-steps { padding-left: 24px; margin: 16px 0; display: grid; gap: 18px; font-size: 14px; line-height: 1.5; }
+.invite-steps li { padding-left: 8px; }
+.invite-steps strong, .invite-steps span { display: block; }
+.invite-steps span { color: var(--muted); margin-top: 4px; }
+.invite-generated { padding: 16px; background: var(--panel-2); border-radius: 8px; }
+.sample-invite, .sample-invite-result { scroll-margin-top: 96px; }
+@media (max-width: 760px) { .sample-invite-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; } .sample-invite, .sample-invite-result { padding: 18px; } }
 .dlg h2 { margin: 0 0 14px; font: 650 19px var(--display); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
 .form-grid label { display: grid; gap: 5px; font-size: 12.5px; color: var(--muted); }

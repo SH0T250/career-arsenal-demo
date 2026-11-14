@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Career Arsenal · Mission Control (demo)</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="demo.css?v=workflow-1">
-<script src="demo.js?v=workflow-1"></script>
-  <link rel="stylesheet" href="mission.css?v=workflow-2">
+<link rel="stylesheet" href="demo.css?v=invite-1">
+<script src="demo.js?v=invite-1"></script>
+<link rel="stylesheet" href="mission.css?v=invite-1">
 <link rel="stylesheet" href="warroom.css">
 <script src="theme.js?v=sample-2"></script>
 </head>
 <body>
-<div class="demo-bar" id="demoBar"><a href="../" style="color:inherit;font-weight:600;white-space:nowrap">Back to tour</a><b>Demo</b><span id="demoMsg">Sample jobs, interviews and scores · changes stay in this tab · no real accounts connected.</span><button type="button" data-demo-start>Try sample workflow</button><button type="button" data-demo-reset>Reset demo</button></div>
+<div class="demo-bar" id="demoBar"><a href="../" style="color:inherit;font-weight:600;white-space:nowrap">Back to tour</a><b>Demo</b><span id="demoMsg">Sample jobs, interviews and scores · changes stay in this tab · no real accounts connected.</span><a class="demo-action" href="#mail">Try sample Gmail invite</a><button type="button" data-demo-start>Try sample workflow</button><button type="button" data-demo-reset>Reset demo</button></div>
 <header class="top">
   <a class="brand" href="#overview"><b class="t-g">Career Arsenal</b> <span class="t-g">Mission control</span><svg class="brand-mark t-w" viewBox="0 0 48 48" aria-hidden="true"><path class="ring" d="M37 13.1A17 17 0 1 0 37 34.9"/><path class="delta" d="M24 11l8.5 21.5L24 26.5l-8.5 6z"/></svg><b class="t-w">Career Arsenal</b></a>
   <span class="wr-pill t-w" id="wrDate"></span>
@@ -176,6 +176,7 @@
           <button type="button" class="btn primary" data-iv-add>Add sample interview</button>
         </div>
       </div>
+      <section class="panel sample-invite-result" id="ivInviteResult" aria-label="Accepted sample invite" hidden></section>
       <div class="mini-kpis" id="ivKpis"></div>
       <section class="panel cal-panel"><div class="panel-h"><div><h2>Next two weeks</h2><p>A simulated calendar with sample interviews, follow-ups and study time. Click an interview to inspect the event; no Google Calendar changes occur.</p></div><div class="cal-legend" id="ivCalLegend"></div></div><div class="cal14" id="ivCal"></div></section>
       <div class="two-col iv-cols">
@@ -330,6 +331,7 @@
     <!-- Mail -->
     <section class="page" data-views="mail" aria-labelledby="mlTitle" hidden>
       <div class="page-h"><div><h1 id="mlTitle">Mail</h1><p id="mlSub"></p></div></div>
+      <section class="panel sample-invite" id="sampleInvite" aria-labelledby="sampleInviteTitle" hidden></section>
       <div class="mini-kpis" id="mlKpis"></div>
       <section class="panel" aria-label="Mail log">
         <div class="ptabs in-panel" id="mlTabs" role="group" aria-label="Which mail"></div>
@@ -379,7 +381,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<script type="module" src="mission.js?v=workflow-1"></script>
+<script type="module" src="mission.js?v=invite-1"></script>
 </body>
 </html>
 
